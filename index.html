@@ -58,7 +58,6 @@
     }
 
     .hero::after {
-      /* gradient overlay to help text legibility on narrow screens */
       content: "";
       position: absolute;
       inset: 0;
@@ -230,12 +229,27 @@
       }
     }
 
-    /* ---- RSVP / Google Form responsiveness ---- */
-    .form-wrapper {
-      max-width: 900px;
-      margin: 32px auto 24px;
-      padding: 0 8px 24px;
-      color: #ffffff;
+    /* RSVP block INSIDE right column */
+    .rsvp {
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .rsvp h2 {
+      font-size: 1.1rem;
+      margin-bottom: 6px;
+    }
+
+    .rsvp p.desc {
+      font-size: 0.9rem;
+      margin-bottom: 12px;
+      color: #d3c7ff;
+    }
+
+    .rsvp-iframe {
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.1);
     }
 
     .form-alt-link {
@@ -248,6 +262,7 @@
       align-items: center;
       justify-content: center;
       padding: 12px 16px;
+      width: 100%;
       border-radius: 999px;
       border: 1px solid rgba(255, 255, 255, 0.3);
       text-decoration: none;
@@ -259,7 +274,7 @@
 
     /* On small screens: hide iframe, show “open form” button */
     @media (max-width: 768px) {
-      .form-wrapper iframe {
+      .rsvp-iframe {
         display: none;
       }
       .form-alt-link {
@@ -275,7 +290,7 @@
       <img src="presenta.png" alt="Diosa presenta Low Expectations" />
     </section>
 
-    <!-- Right: content (moves below on smaller widths) -->
+    <!-- Right: content (includes RSVP block) -->
     <section class="content">
       <div>
         <div class="tagline">diosa bar • washington, dc</div>
@@ -306,7 +321,6 @@
             Pagar $10 con Venmo
           </a>
 
-          <!-- Link that scrolls to the RSVP / Google Form section -->
           <button class="btn-secondary" type="button" onclick="document.getElementById('rsvp').scrollIntoView({ behavior: 'smooth' });">
             Ya pagué / Reservar mi entrada →
           </button>
@@ -318,6 +332,40 @@
             tus datos y el usuario que usaste para pagar.
           </p>
         </div>
+
+        <!-- RSVP / tracking block, now directly below the note -->
+        <section id="rsvp" class="rsvp">
+          <h2>Confirma tu entrada</h2>
+          <p class="desc">
+            Completa este formulario después de pagar por Venmo para que podamos
+            anotarte en la lista. El formulario se guarda automáticamente en una
+            hoja de cálculo de Google.
+          </p>
+
+          <!-- Embedded form (desktop / tablet) -->
+          <iframe
+            class="rsvp-iframe"
+            src="https://docs.google.com/forms/d/e/1FAIpQLSfYOEu2ke88VB3B6GkrZHvewem7kzTN0sky3bl8tVplXHD1eg/viewform?embedded=true"
+            width="100%"
+            height="650"
+            frameborder="0"
+            marginheight="0"
+            marginwidth="0"
+          >
+            Cargando…
+          </iframe>
+
+          <!-- Mobile-only direct link to the form -->
+          <div class="form-alt-link">
+            <a
+              href="https://docs.google.com/forms/d/e/1FAIpQLSfYOEu2ke88VB3B6GkrZHvewem7kzTN0sky3bl8tVplXHD1eg/viewform"
+              target="_blank"
+              rel="noopener"
+            >
+              Abrir formulario de reserva en pantalla completa
+            </a>
+          </div>
+        </section>
       </div>
 
       <div class="footer">
@@ -325,41 +373,5 @@
       </div>
     </section>
   </main>
-
-  <!-- RSVP / tracking section -->
-  <section id="rsvp" class="form-wrapper">
-    <h2 style="font-size: 1.2rem; margin-bottom: 8px;">
-      Confirma tu entrada
-    </h2>
-    <p style="font-size: 0.9rem; margin-bottom: 12px; color:#d3c7ff;">
-      Completa este formulario después de pagar por Venmo para que podamos
-      anotarte en la lista. El formulario se guarda automáticamente en una
-      hoja de cálculo de Google.
-    </p>
-
-    <!-- Embedded form (desktop / tablet) -->
-    <iframe
-      src="https://docs.google.com/forms/d/e/1FAIpQLSfYOEu2ke88VB3B6GkrZHvewem7kzTN0sky3bl8tVplXHD1eg/viewform?embedded=true"
-      width="100%"
-      height="650"
-      frameborder="0"
-      marginheight="0"
-      marginwidth="0"
-      style="border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);"
-    >
-      Cargando…
-    </iframe>
-
-    <!-- Mobile-only direct link to the form -->
-    <div class="form-alt-link">
-      <a
-        href="https://docs.google.com/forms/d/e/1FAIpQLSfYOEu2ke88VB3B6GkrZHvewem7kzTN0sky3bl8tVplXHD1eg/viewform"
-        target="_blank"
-        rel="noopener"
-      >
-        Abrir formulario de reserva en pantalla completa
-      </a>
-    </div>
-  </section>
 </body>
 </html>
