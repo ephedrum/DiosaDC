@@ -191,8 +191,8 @@
       color: var(--accent);
     }
 
-    /* Layout on small screens */
-    @media (max-width: 768px) {
+    /* Layout: collapse to single column on narrower screens */
+    @media (max-width: 1024px) {
       .page {
         grid-template-columns: 1fr;
       }
@@ -275,7 +275,7 @@
       <img src="presenta.png" alt="Diosa presenta Low Expectations" />
     </section>
 
-    <!-- Right: content -->
+    <!-- Right: content (moves below on smaller widths) -->
     <section class="content">
       <div>
         <div class="tagline">diosa bar • washington, dc</div>
