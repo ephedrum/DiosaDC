@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Diosa presenta Low Expectations – 6 de Diciembre</title>
+  <style>
+    :root {
+      --bg-dark: #050318;
+      --accent: #f5e4ff;
+      --accent-strong: #ffcf58;
+      --text-main: #ffffff;
+      --text-muted: #d3c7ff;
+      --max-width: 900px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+                   "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #3a1b6f 0, #050318 55%, #000 100%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      padding: 16px;
+    }
+
+    .page {
+      width: 100%;
+      max-width: var(--max-width);
+      border-radius: 24px;
+      overflow: hidden;
+      background: rgba(5, 3, 24, 0.94);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7);
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      filter: contrast(1.1) saturate(1.2);
+      transform: scale(1.02);
+    }
+
+    .hero::after {
+      /* gradient overlay to help text legibility on narrow screens */
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to right,
+        rgba(5, 3, 24, 0.85),
+        rgba(5, 3, 24, 0.20)
+      );
+      pointer-events: none;
+    }
+
+    .content {
+      padding: 28px 24px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      justify-content: space-between;
+    }
+
+    .tagline {
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    h1 {
+      font-size: 1.9rem;
+      line-height: 1.1;
+      margin-top: 4px;
+    }
+
+    h1 span.highlight {
+      color: var(--accent-strong);
+    }
+
+    .subtitle {
+      font-size: 1.05rem;
+      color: var(--accent);
+      margin-top: 4px;
+    }
+
+    .details {
+      margin-top: 16px;
+      font-size: 0.98rem;
+      line-height: 1.6;
+    }
+
+    .details strong {
+      color: var(--accent-strong);
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .cta-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 14px 16px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      background: linear-gradient(135deg, #ffcf58, #ff7b8a);
+      color: #1a1020;
+      font-weight: 700;
+      font-size: 1rem;
+      text-align: center;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px) scale(1.01);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75);
+      filter: brightness(1.05);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0) scale(0.99);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.65);
+    }
+
+    .btn-secondary {
+      font-size: 0.9rem;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      color: var(--text-muted);
+      text-align: left;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+    }
+
+    .note {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+      margin-top: 4px;
+    }
+
+    .footer {
+      margin-top: 14px;
+      font-size: 0.75rem;
+      color: #9b8dd6;
+    }
+
+    .footer strong {
+      color: var(--accent);
+    }
+
+    /* Layout on small screens */
+    @media (max-width: 768px) {
+      .page {
+        grid-template-columns: 1fr;
+      }
+      .hero {
+        max-height: 320px;
+      }
+      .hero::after {
+        background: linear-gradient(
+          to bottom,
+          rgba(5, 3, 24, 0.9),
+          rgba(5, 3, 24, 0.1)
+        );
+      }
+      .content {
+        padding: 20px 16px 18px;
+      }
+      h1 {
+        font-size: 1.6rem;
+      }
+      .subtitle {
+        font-size: 0.98rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      h1 {
+        font-size: 1.45rem;
+      }
+      .details {
+        font-size: 0.9rem;
+      }
+      .btn-primary {
+        font-size: 0.95rem;
+        padding: 12px 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <!-- Left: event art -->
+    <section class="hero" aria-hidden="true">
+      <img src="presenta.png" alt="Diosa presenta Low Expectations" />
+    </section>
+
+    <!-- Right: content -->
+    <section class="content">
+      <div>
+        <div class="tagline">diosa bar • washington, dc</div>
+        <h1>
+          <span class="highlight">Diosa</span> presenta<br />
+          <span>LOW EXPECTATIONS</span>
+        </h1>
+        <p class="subtitle">Unleash your inner goddess // Latin-alt & rock en vivo</p>
+
+        <div class="details">
+          <div class="pill">evento especial</div>
+          <p><strong>Viernes 6 de Diciembre · 9:00 PM</strong></p>
+          <p>1610 14th St NW, Suite B<br />Washington, DC 20009</p>
+          <p style="margin-top: 10px;">
+            Entrada anticipada: <strong>$10 por persona vía Venmo</strong><br />
+            Cupos limitados.
+          </p>
+        </div>
+
+        <div class="cta-group">
+          <!-- VENMO PAYMENT BUTTON -->
+          <a
+            class="btn-primary"
+            href="https://venmo.com/nicoraigo?txn=pay&amount=10&note=Low%20Expectations%20en%20Diosa%20-%206%20Dic"
+            target="_blank"
+            rel="noopener"
+          >
+            Pagar $10 con Venmo
+          </a>
+
+          <!-- Optional: link that scrolls to the RSVP / Google Form section -->
+          <button class="btn-secondary" type="button" onclick="document.getElementById('rsvp').scrollIntoView({ behavior: 'smooth' });">
+            Ya pagué / Reservar mi entrada →
+          </button>
+
+          <p class="note">
+            El botón abre la app o web de Venmo con el pago a <strong>@nicoraigo</strong>
+            por <strong>$10</strong>. Revisa que el monto y el usuario sean correctos
+            antes de confirmar. Si ya pagaste, solo llena el formulario con el nombre tus datos y el usuario que usaste para pagar.
+          </p>
+        </div>
+      </div>
+
+      <div class="footer">
+        Powered by <strong>LOW EXPECTATIONS</strong> · Show íntimo, los mejores temas del rock nacional, una noche inolvidable.
+      </div>
+    </section>
+  </main>
+
+  <!-- RSVP / tracking section -->
+  <section id="rsvp" style="max-width: 900px; margin: 32px auto 0; color: white;">
+    <h2 style="font-size: 1.2rem; margin-bottom: 8px; padding: 0 8px;">
+      Confirma tu entrada
+    </h2>
+    <p style="font-size: 0.9rem; margin-bottom: 12px; padding: 0 8px; color:#d3c7ff;">
+      Completa este formulario después de pagar por Venmo para que podamos
+      anotarte en la lista. El formulario se guarda automáticamente en una
+      hoja de cálculo de Google.
+    </p>
+    <iframe 
+      src="https://docs.google.com/forms/d/e/1FAIpQLSfYOEu2ke88VB3B6GkrZHvewem7kzTN0sky3bl8tVplXHD1eg/viewform?embedded=true" 
+      width="640" 
+      height="0" 
+      frameborder="0" 
+      marginheight="0" 
+      marginwidth="0"
+    >
+      Loading…
+    </iframe>
+    <!-- Replace the src URL below with your own Google Form embed link -->
+    <iframe
+      src="https://docs.google.com/forms/d/e/1FAIpQLSfYOEu2ke88VB3B6GkrZHvewem7kzTN0sky3bl8tVplXHD1eg/viewform?embedded=true"
+      width="100%"
+      height="100%"
+      frameborder="0"
+      marginheight="0"
+      marginwidth="0"
+      style="border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);"
+    >
+      Cargando…
+    </iframe>
+  </section>
+</body>
+</html>
