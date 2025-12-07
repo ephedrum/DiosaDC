@@ -1,17 +1,23 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Diosa presenta Low Expectations – 6 de Diciembre</title>
+  <title>Low Expectations — Afterglow Gallery</title>
   <style>
     :root {
-      --bg-dark: #050318;
-      --accent: #f5e4ff;
-      --accent-strong: #ffcf58;
-      --text-main: #ffffff;
-      --text-muted: #d3c7ff;
-      --max-width: 900px;
+      --bg-1: #050814;
+      --bg-2: #0f182e;
+      --glass: rgba(255, 255, 255, 0.12);
+      --glass-strong: rgba(255, 255, 255, 0.18);
+      --text: #f6f7fb;
+      --muted: #cdd3e6;
+      --accent: #8ef1ff;
+      --accent-2: #ff7fbf;
+      --shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+      --radius-lg: 28px;
+      --radius-md: 18px;
+      --max-width: 1160px;
     }
 
     * {
@@ -21,372 +27,523 @@
     }
 
     body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
-                   "Segoe UI", sans-serif;
-      background: radial-gradient(circle at top, #3a1b6f 0, #050318 55%, #000 100%);
-      color: var(--text-main);
       min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: stretch;
-      padding: 16px;
+      font-family: "Segoe UI", "SF Pro Display", system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at 20% 20%, rgba(142, 241, 255, 0.12), transparent 40%),
+                  radial-gradient(circle at 80% 0%, rgba(255, 127, 191, 0.16), transparent 38%),
+                  linear-gradient(140deg, var(--bg-1), var(--bg-2) 60%, #060910 100%);
+      color: var(--text);
+      padding: 24px 18px 48px;
+      position: relative;
+      overflow-x: hidden;
     }
 
-    .page {
-      width: 100%;
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.05) 0, transparent 25%),
+        radial-gradient(circle at 80% 10%, rgba(255, 255, 255, 0.03) 0, transparent 22%),
+        linear-gradient(120deg, rgba(255, 255, 255, 0.03) 10%, transparent 40%);
+      mix-blend-mode: screen;
+      opacity: 0.65;
+    }
+
+    .container {
       max-width: var(--max-width);
-      border-radius: 24px;
-      overflow: hidden;
-      background: rgba(5, 3, 24, 0.94);
-      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7);
-      display: grid;
-      grid-template-columns: 1.1fr 1fr;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 18px;
+      margin-bottom: 24px;
+      background: var(--glass);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    .logo-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 0 12px rgba(142, 241, 255, 0.8);
+    }
+
+    nav {
+      display: flex;
+      gap: 14px;
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+
+    nav a {
+      text-decoration: none;
+      color: inherit;
+      padding: 10px 14px;
+      border-radius: 999px;
+      transition: color 0.2s ease, background 0.2s ease;
+    }
+
+    nav a:hover,
+    nav a:focus-visible {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.08);
+      outline: none;
     }
 
     .hero {
-      position: relative;
-      overflow: hidden;
+      margin-bottom: 28px;
     }
 
-    .hero img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-      filter: contrast(1.1) saturate(1.2);
-      transform: scale(1.02);
+    .hero-panel {
+      background: var(--glass-strong);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-lg);
+      padding: 36px 32px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+      display: grid;
+      gap: 16px;
     }
 
-    .hero::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(
-        to right,
-        rgba(5, 3, 24, 0.85),
-        rgba(5, 3, 24, 0.20)
-      );
-      pointer-events: none;
-    }
-
-    .content {
-      padding: 28px 24px 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      justify-content: space-between;
-    }
-
-    .tagline {
-      text-transform: uppercase;
+    .eyebrow {
       letter-spacing: 0.2em;
-      font-size: 0.75rem;
-      color: var(--text-muted);
-    }
-
-    h1 {
-      font-size: 1.9rem;
-      line-height: 1.1;
-      margin-top: 4px;
-    }
-
-    h1 span.highlight {
-      color: var(--accent-strong);
-    }
-
-    .subtitle {
-      font-size: 1.05rem;
-      color: var(--accent);
-      margin-top: 4px;
-    }
-
-    .details {
-      margin-top: 16px;
-      font-size: 0.98rem;
-      line-height: 1.6;
-    }
-
-    .details strong {
-      color: var(--accent-strong);
-    }
-
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.06);
-      font-size: 0.8rem;
       text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: var(--text-muted);
-      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: 0.8rem;
     }
 
-    .cta-group {
+    .hero h1 {
+      font-size: clamp(2rem, 3.6vw, 3.2rem);
+      line-height: 1.08;
+    }
+
+    .hero h1 span {
+      color: var(--accent);
+    }
+
+    .hero p {
+      font-size: 1.05rem;
+      color: var(--muted);
+      max-width: 720px;
+    }
+
+    .actions {
       display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-top: 10px;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 6px;
     }
 
-    .btn-primary {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      padding: 14px 16px;
-      border-radius: 999px;
+    .btn {
       border: none;
       cursor: pointer;
       text-decoration: none;
-      background: linear-gradient(135deg, #ffcf58, #ff7b8a);
-      color: #1a1020;
       font-weight: 700;
+      border-radius: 999px;
+      padding: 14px 18px;
       font-size: 1rem;
-      text-align: center;
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
-      transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .btn-primary {
+      color: #0b0f1d;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35), 0 8px 20px rgba(142, 241, 255, 0.25);
     }
 
     .btn-primary:hover {
       transform: translateY(-1px) scale(1.01);
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75);
-      filter: brightness(1.05);
+      box-shadow: 0 18px 38px rgba(0, 0, 0, 0.4), 0 10px 22px rgba(142, 241, 255, 0.3);
     }
 
     .btn-primary:active {
-      transform: translateY(0) scale(0.99);
-      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.65);
+      transform: translateY(0);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
     }
 
-    .btn-secondary {
-      font-size: 0.9rem;
-      text-decoration: underline;
-      text-underline-offset: 3px;
-      color: var(--text-muted);
-      text-align: left;
-      cursor: pointer;
-      background: none;
-      border: none;
-      padding: 0;
-    }
-
-    .note {
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      line-height: 1.4;
-      margin-top: 4px;
-    }
-
-    .footer {
-      margin-top: 14px;
-      font-size: 0.75rem;
-      color: #9b8dd6;
-    }
-
-    .footer strong {
-      color: var(--accent);
-    }
-
-    /* Layout: collapse to single column on narrower screens */
-    @media (max-width: 1024px) {
-      .page {
-        grid-template-columns: 1fr;
-      }
-      .hero {
-        max-height: 320px;
-      }
-      .hero::after {
-        background: linear-gradient(
-          to bottom,
-          rgba(5, 3, 24, 0.9),
-          rgba(5, 3, 24, 0.1)
-        );
-      }
-      .content {
-        padding: 20px 16px 18px;
-      }
-      h1 {
-        font-size: 1.6rem;
-      }
-      .subtitle {
-        font-size: 0.98rem;
-      }
-    }
-
-    @media (max-width: 480px) {
-      h1 {
-        font-size: 1.45rem;
-      }
-      .details {
-        font-size: 0.9rem;
-      }
-      .btn-primary {
-        font-size: 0.95rem;
-        padding: 12px 14px;
-      }
-    }
-
-    /* RSVP block INSIDE right column */
-    .rsvp {
-      margin-top: 22px;
-      padding-top: 18px;
-      border-top: 1px solid rgba(255,255,255,0.08);
-    }
-
-    .rsvp h2 {
-      font-size: 1.1rem;
-      margin-bottom: 6px;
-    }
-
-    .rsvp p.desc {
-      font-size: 0.9rem;
-      margin-bottom: 12px;
-      color: #d3c7ff;
-    }
-
-    .rsvp-iframe {
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,0.1);
-    }
-
-    .form-alt-link {
-      display: none; /* hidden on desktop, shown on phones */
-      margin-top: 14px;
-    }
-
-    .form-alt-link a {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 12px 16px;
-      width: 100%;
-      border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      text-decoration: none;
-      font-size: 0.95rem;
-      color: #ffffff;
-      background: rgba(5, 3, 24, 0.85);
+    .btn-ghost {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       backdrop-filter: blur(10px);
     }
 
-    /* On small screens: hide iframe, show “open form” button */
-    @media (max-width: 768px) {
-      .rsvp-iframe {
-        display: none;
+    .btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    main {
+      display: grid;
+      gap: 26px;
+    }
+
+    /* Carousel */
+    .carousel-section {
+      background: var(--glass);
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+      padding: 20px 18px 24px;
+    }
+
+    .carousel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      padding: 0 6px;
+    }
+
+    .carousel-title {
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .carousel {
+      position: relative;
+      overflow: hidden;
+      border-radius: var(--radius-md);
+    }
+
+    .slides {
+      position: relative;
+      height: min(64vh, 540px);
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.6s ease, transform 0.6s ease;
+      transform: scale(0.98);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .slide img,
+    .slide video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      filter: saturate(1.05);
+    }
+
+    /* Radio logic */
+    input[type="radio"].slide-toggle {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #slide-1:checked ~ main .carousel .slide:nth-of-type(1),
+    #slide-2:checked ~ main .carousel .slide:nth-of-type(2),
+    #slide-3:checked ~ main .carousel .slide:nth-of-type(3),
+    #slide-4:checked ~ main .carousel .slide:nth-of-type(4),
+    #slide-5:checked ~ main .carousel .slide:nth-of-type(5),
+    #slide-6:checked ~ main .carousel .slide:nth-of-type(6),
+    #slide-7:checked ~ main .carousel .slide:nth-of-type(7),
+    #slide-8:checked ~ main .carousel .slide:nth-of-type(8),
+    #slide-9:checked ~ main .carousel .slide:nth-of-type(9),
+    #slide-10:checked ~ main .carousel .slide:nth-of-type(10),
+    #slide-11:checked ~ main .carousel .slide:nth-of-type(11) {
+      opacity: 1;
+      transform: scale(1);
+      pointer-events: auto;
+      z-index: 1;
+    }
+
+    /* Controls */
+    .control {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 2;
+    }
+
+    .control label {
+      display: none;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+      color: var(--text);
+      font-size: 1.2rem;
+      transition: transform 0.15s ease, background 0.2s ease;
+    }
+
+    .control label:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    .control.left { left: 16px; }
+    .control.right { right: 16px; }
+
+    /* Pagination dots */
+    .dots {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .dots label {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.25);
+      cursor: pointer;
+      transition: transform 0.2s ease, background 0.2s ease;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+    }
+
+    .dots label:hover {
+      transform: scale(1.1);
+      background: rgba(255, 255, 255, 0.35);
+    }
+
+    #slide-1:checked ~ main .carousel .dots label:nth-of-type(1),
+    #slide-2:checked ~ main .carousel .dots label:nth-of-type(2),
+    #slide-3:checked ~ main .carousel .dots label:nth-of-type(3),
+    #slide-4:checked ~ main .carousel .dots label:nth-of-type(4),
+    #slide-5:checked ~ main .carousel .dots label:nth-of-type(5),
+    #slide-6:checked ~ main .carousel .dots label:nth-of-type(6),
+    #slide-7:checked ~ main .carousel .dots label:nth-of-type(7),
+    #slide-8:checked ~ main .carousel .dots label:nth-of-type(8),
+    #slide-9:checked ~ main .carousel .dots label:nth-of-type(9),
+    #slide-10:checked ~ main .carousel .dots label:nth-of-type(10),
+    #slide-11:checked ~ main .carousel .dots label:nth-of-type(11) {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-color: transparent;
+      box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.08);
+    }
+
+    /* Show relevant prev/next buttons */
+    #slide-1:checked ~ main .carousel .prev .p1,
+    #slide-2:checked ~ main .carousel .prev .p2,
+    #slide-3:checked ~ main .carousel .prev .p3,
+    #slide-4:checked ~ main .carousel .prev .p4,
+    #slide-5:checked ~ main .carousel .prev .p5,
+    #slide-6:checked ~ main .carousel .prev .p6,
+    #slide-7:checked ~ main .carousel .prev .p7,
+    #slide-8:checked ~ main .carousel .prev .p8,
+    #slide-9:checked ~ main .carousel .prev .p9,
+    #slide-10:checked ~ main .carousel .prev .p10,
+    #slide-11:checked ~ main .carousel .prev .p11 {
+      display: inline-flex;
+    }
+
+    #slide-1:checked ~ main .carousel .next .n1,
+    #slide-2:checked ~ main .carousel .next .n2,
+    #slide-3:checked ~ main .carousel .next .n3,
+    #slide-4:checked ~ main .carousel .next .n4,
+    #slide-5:checked ~ main .carousel .next .n5,
+    #slide-6:checked ~ main .carousel .next .n6,
+    #slide-7:checked ~ main .carousel .next .n7,
+    #slide-8:checked ~ main .carousel .next .n8,
+    #slide-9:checked ~ main .carousel .next .n9,
+    #slide-10:checked ~ main .carousel .next .n10,
+    #slide-11:checked ~ main .carousel .next .n11 {
+      display: inline-flex;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      body {
+        padding: 18px 14px 36px;
       }
-      .form-alt-link {
-        display: block;
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      nav {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+      }
+      .hero-panel {
+        padding: 26px 22px;
+      }
+      .slides {
+        height: 58vh;
+        min-height: 320px;
+      }
+      .control label {
+        width: 44px;
+        height: 44px;
+      }
+    }
+
+    @media (min-width: 601px) and (max-width: 1024px) {
+      .hero-panel {
+        padding: 32px 28px;
+      }
+      .slides {
+        height: 62vh;
+      }
+    }
+
+    @media (min-width: 1025px) {
+      body {
+        padding: 28px 24px 54px;
+      }
+      .hero-panel {
+        grid-template-columns: 1.1fr;
       }
     }
   </style>
-    <!-- Privacy-friendly analytics by Plausible -->
-    <script async src="https://plausible.io/js/pa-pZ8n4AArppL69ID6VYOiF.js"></script>
-    <script>
-      window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
-      plausible.init()
-    </script>
-
 </head>
 <body>
-  <main class="page">
-    <!-- Left: event art -->
-    <section class="hero" aria-hidden="true">
-      <img src="poster.png" alt="Diosa presenta Low Expectations" />
-    </section>
+  <div class="container">
+    <input class="slide-toggle" type="radio" name="slider" id="slide-1" checked />
+    <input class="slide-toggle" type="radio" name="slider" id="slide-2" />
+    <input class="slide-toggle" type="radio" name="slider" id="slide-3" />
+    <input class="slide-toggle" type="radio" name="slider" id="slide-4" />
+    <input class="slide-toggle" type="radio" name="slider" id="slide-5" />
+    <input class="slide-toggle" type="radio" name="slider" id="slide-6" />
+    <input class="slide-toggle" type="radio" name="slider" id="slide-7" />
+    <input class="slide-toggle" type="radio" name="slider" id="slide-8" />
+    <input class="slide-toggle" type="radio" name="slider" id="slide-9" />
+    <input class="slide-toggle" type="radio" name="slider" id="slide-10" />
+    <input class="slide-toggle" type="radio" name="slider" id="slide-11" />
 
-    <!-- Right: content (includes RSVP block) -->
-    <section class="content">
-      <div>
-        <div class="tagline">diosa bar • washington, dc</div>
-        <h1>
-          <span class="highlight">Diosa</span> presenta<br />
-          <span>LOW EXPECTATIONS</span>
-        </h1>
-        <p class="subtitle">Banda en vivo + DJ y fiesta Latin-alt rock.</p>
+    <header>
+      <div class="brand">
+        <span class="logo-dot"></span>
+        Diosa // Low Expectations - Dec 2025
+      </div>
+      <nav>
+        <a href="#gallery">Gracias por venir!/Thank you for coming!</a>
+      </nav>
+    </header>
 
-        <div class="details">
-          <div class="pill">evento especial</div>
-          <p><strong>Sabado 6 de Diciembre · 9:00 PM</strong></p>
-          <p>1610 14th St NW, Suite B<br />Washington, DC 20009</p>
-          <p style="margin-top: 10px;">
-            Entrada anticipada: <strong>$10 por persona vía Venmo</strong><br />
-            Cupos limitados.
-          </p>
+    <main>
+      <section id="gallery" class="carousel-section">
+        <div class="carousel-header">
+          <div class="carousel-title">Aftershow Gallery</div>
+          <div style="color: var(--muted); font-size: 0.9rem;">Swipe or tap the controls</div>
         </div>
 
-        <div class="cta-group">
-          <!-- VENMO PAYMENT BUTTON -->
-          <a
-            class="btn-primary"
-            href="https://venmo.com/nicoraigo?txn=pay&amount=10&note=Entrada-LE-Diosa-6-Dic"
-            target="_blank"
-            rel="noopener"
-          >
-            Pagar $10 con Venmo
-          </a>
-
-          <button class="btn-secondary" type="button" onclick="document.getElementById('rsvp').scrollIntoView({ behavior: 'smooth' });">
-            Ya pagué / Reservar mi entrada →
-          </button>
-
-          <p class="note">
-            El botón abre la app o web de Venmo con el pago a <strong>@nicoraigo</strong>
-            por <strong>$10</strong>. Revisa que el monto y el usuario sean correctos
-            antes de confirmar. Si ya pagaste, solo llena el formulario con tu nombre,
-            tus datos y el usuario que usaste para pagar.
-          </p>
-        </div>
-
-        <!-- RSVP / tracking block, now directly below the note -->
-        <section id="rsvp" class="rsvp">
-          <h2>Confirma tu entrada</h2>
-          <p class="desc">
-            Completa este formulario después de pagar por Venmo para que podamos
-            anotarte en la lista. El formulario se guarda automáticamente en una
-            hoja de cálculo de Google.
-          </p>
-
-          <!-- Embedded form (desktop / tablet) -->
-          <iframe
-            class="rsvp-iframe"
-            src="https://docs.google.com/forms/d/e/1FAIpQLSfYOEu2ke88VB3B6GkrZHvewem7kzTN0sky3bl8tVplXHD1eg/viewform?embedded=true"
-            width="100%"
-            height="650"
-            frameborder="0"
-            marginheight="0"
-            marginwidth="0"
-          >
-            Cargando…
-          </iframe>
-
-          <!-- Mobile-only direct link to the form -->
-          <div class="form-alt-link">
-            <a
-              href="https://docs.google.com/forms/d/e/1FAIpQLSfYOEu2ke88VB3B6GkrZHvewem7kzTN0sky3bl8tVplXHD1eg/viewform"
-              target="_blank"
-              rel="noopener"
-            >
-              Abrir formulario de reserva en pantalla completa
-            </a>
+        <div class="carousel">
+          <div class="slides">
+            <figure class="slide">
+              <img src="images/0.jpg" alt="Crowd in neon lights" />
+            </figure>
+            <figure class="slide">
+              <img src="images/1.jpg" alt="Band performing on stage" />
+            </figure>
+            <figure class="slide">
+              <img src="images/2.jpg" alt="Fans cheering" />
+            </figure>
+            <figure class="slide">
+              <img src="images/3.jpg" alt="Crowd lights up the room" />
+            </figure>
+            <figure class="slide">
+              <img src="images/4.jpg" alt="Band portrait" />
+            </figure>
+            <figure class="slide">
+              <img src="images/5.jpg" alt="Room ambiance" />
+            </figure>
+            <figure class="slide">
+              <img src="images/6.jpg" alt="Stage detail" />
+            </figure>
+            <figure class="slide">
+              <img src="images/7.jpg" alt="Crowd moment" />
+            </figure>
+            <figure class="slide">
+              <img src="images/8.jpg" alt="Performer spotlight" />
+            </figure>
+            <figure class="slide">
+              <img src="images/9.jpg" alt="Group photo" />
+            </figure>
+            <figure class="slide">
+              <img src="images/10.jpg" alt="Afterparty vibes" />
+            </figure>
           </div>
-        </section>
-      </div>
 
-      <div class="footer">
-        Powered by <strong>LOW EXPECTATIONS</strong> · Show en vivo, los mejores temas del rock nacional, una noche inolvidable.
-      </div>
-    </section>
-  </main>
+          <div class="control prev">
+            <label class="p1" for="slide-11" aria-label="Previous slide">‹</label>
+            <label class="p2" for="slide-1" aria-label="Previous slide">‹</label>
+            <label class="p3" for="slide-2" aria-label="Previous slide">‹</label>
+            <label class="p4" for="slide-3" aria-label="Previous slide">‹</label>
+            <label class="p5" for="slide-4" aria-label="Previous slide">‹</label>
+            <label class="p6" for="slide-5" aria-label="Previous slide">‹</label>
+            <label class="p7" for="slide-6" aria-label="Previous slide">‹</label>
+            <label class="p8" for="slide-7" aria-label="Previous slide">‹</label>
+            <label class="p9" for="slide-8" aria-label="Previous slide">‹</label>
+            <label class="p10" for="slide-9" aria-label="Previous slide">‹</label>
+            <label class="p11" for="slide-10" aria-label="Previous slide">‹</label>
+          </div>
+          <div class="control right next">
+            <label class="n1" for="slide-2" aria-label="Next slide">›</label>
+            <label class="n2" for="slide-3" aria-label="Next slide">›</label>
+            <label class="n3" for="slide-4" aria-label="Next slide">›</label>
+            <label class="n4" for="slide-5" aria-label="Next slide">›</label>
+            <label class="n5" for="slide-6" aria-label="Next slide">›</label>
+            <label class="n6" for="slide-7" aria-label="Next slide">›</label>
+            <label class="n7" for="slide-8" aria-label="Next slide">›</label>
+            <label class="n8" for="slide-9" aria-label="Next slide">›</label>
+            <label class="n9" for="slide-10" aria-label="Next slide">›</label>
+            <label class="n10" for="slide-11" aria-label="Next slide">›</label>
+            <label class="n11" for="slide-1" aria-label="Next slide">›</label>
+          </div>
+
+          <div class="dots">
+            <label for="slide-1" aria-label="Slide 1"></label>
+            <label for="slide-2" aria-label="Slide 2"></label>
+            <label for="slide-3" aria-label="Slide 3"></label>
+            <label for="slide-4" aria-label="Slide 4"></label>
+            <label for="slide-5" aria-label="Slide 5"></label>
+            <label for="slide-6" aria-label="Slide 6"></label>
+            <label for="slide-7" aria-label="Slide 7"></label>
+            <label for="slide-8" aria-label="Slide 8"></label>
+            <label for="slide-9" aria-label="Slide 9"></label>
+            <label for="slide-10" aria-label="Slide 10"></label>
+            <label for="slide-11" aria-label="Slide 11"></label>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
 </body>
 </html>
-
-
-
-
-
-
-
-
