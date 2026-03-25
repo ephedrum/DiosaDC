@@ -267,6 +267,7 @@
     .photo-strip {
       padding: 0;
       overflow-x: auto;
+      object-position: center top;
       display: flex;
       gap: 3px;
       scrollbar-width: none;
@@ -276,9 +277,10 @@
 
     .photo-strip img {
       height: 240px;
-      width: auto;
+      width:fit-content;
       object-fit: cover;
-      flex-shrink: 0;
+      
+      flex-shrink: 1;
       display: block;
     }
 
@@ -509,7 +511,7 @@
   <!-- ── HERO ─────────────────────────────────────────── -->
   <section class="hero">
     <div class="hero-img-wrap">
-      <img class="hero-bg" src="images/hero2.webp" alt="Low Expectations band on stage at Diosa DC" />
+      <img class="hero-bg" src="images/hero2.png" alt="Low Expectations band on stage at Diosa DC" />
       <div class="hero-gradient"></div>
     </div>
 
@@ -532,9 +534,7 @@
 
   <!-- ── PHOTO STRIP ────────────────────────────────────  -->
   <div class="photo-strip" aria-hidden="true">
-    <img src="images/1.jpg" alt="Low Expectations vocalist" />
-    <img src="images/4.jpg" alt="Saxophonist" />
-    <img src="images/3.jpg" alt="Guitarist and vocalist" />
+    <img src="images/fullb1.webp" alt="Saxophonist" />    
   </div>
 
   <!-- ── EVENT DETAILS ──────────────────────────────────  -->
