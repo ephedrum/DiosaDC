@@ -475,11 +475,18 @@ function Shows() {
 const galleryItems = [
 { src: 'uploads/fullband-stage-wide.webp', alt: 'Low Expectations full band on stage' },
 { src: 'uploads/vocalist.webp', alt: 'Vocalist performing live' },
-{ src: 'uploads/guitarist-hands-2.webp', alt: 'Guitar close-up' },
 { src: 'uploads/band-portrait.webp', alt: 'Band portrait on stage' },
 { src: 'uploads/crowd-stage-wide.webp', alt: 'Crowd and stage wide shot' },
 { src: 'uploads/drummer-action-shot.webp', alt: 'Drummer live on stage' },
 { src: 'uploads/guitarist-hands.webp', alt: 'Guitarist with PRS guitar' },
+{ src: 'uploads/gal1.webp', alt: 'Vocalist and guitarist — blue light' },
+{ src: 'uploads/gal2.webp', alt: 'Vocalist and guitarist at Marx Cafe' },
+{ src: 'uploads/gal3.webp', alt: 'Saxophonist in green light' },
+{ src: 'uploads/gal4.webp', alt: 'Full band at private event' },
+{ src: 'uploads/gal5.webp', alt: 'Vocalist and guitarist close-up' },
+{ src: 'uploads/gal6.webp', alt: 'Vocalist at the mic' },
+{ src: 'uploads/gal7.webp', alt: 'Full band wide shot at Marx Cafe' },
+{ src: 'uploads/gal8.webp', alt: 'Bassist close-up' },
 ];
 
 
@@ -563,53 +570,15 @@ function Contact() {
             </a>
           </div>
           <div>
-            {sent ?
-            <div className="form-success">
-                <strong>Message Received.</strong>
-                We'll get back to you within 24–48 hours. Thanks for reaching out.
-              </div> :
-
-            <form onSubmit={submit} noValidate>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label style={errors.name ? { color: 'var(--accent)' } : {}}>Name {errors.name && '— required'}</label>
-                    <input type="text" placeholder="Your name" value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  style={errors.name ? { borderBottomColor: 'var(--accent)' } : {}} />
-                  </div>
-                  <div className="form-group">
-                    <label style={errors.email ? { color: 'var(--accent)' } : {}}>Email {errors.email && '— required'}</label>
-                    <input type="email" placeholder="your@email.com" value={form.email}
-                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                  style={errors.email ? { borderBottomColor: 'var(--accent)' } : {}} />
-                  </div>
-                </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Venue / Organization</label>
-                    <input type="text" placeholder="Venue or org (optional)" value={form.org}
-                  onChange={(e) => setForm((f) => ({ ...f, org: e.target.value }))} />
-                  </div>
-                  <div className="form-group">
-                    <label>Inquiry Type</label>
-                    <select value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}>
-                      <option value="">Select type...</option>
-                      <option value="booking">Show Booking</option>
-                      <option value="private">Private Event</option>
-                      <option value="collab">Collaboration</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label style={errors.message ? { color: 'var(--accent)' } : {}}>Message {errors.message && '— required'}</label>
-                  <textarea placeholder="Tell us about the show, date, venue, and anything else we should know..." value={form.message}
-                onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}
-                style={errors.message ? { borderBottomColor: 'var(--accent)' } : {}} />
-                </div>
-                <button type="submit" className="btn btn-solid" style={{ marginTop: 8 }}>Send Message</button>
-              </form>
-            }
+<div style={{display:'flex', flexDirection:'column', gap:16, paddingTop:8}}>
+              <a href="sms:+12023418026" className="btn btn-solid" style={{display:'block', textAlign:'center', fontSize:13, padding:'22px 32px', letterSpacing:'0.18em'}}>
+                Text Us &nbsp;·&nbsp; (202) 341-8026
+              </a>
+              <a href="https://www.instagram.com/lowexpectations.dc" target="_blank" rel="noopener" className="btn btn-outline" style={{display:'block', textAlign:'center', fontSize:13, padding:'22px 32px', letterSpacing:'0.18em'}}>
+                DM on Instagram &nbsp;·&nbsp; @lowexpectations.dc
+              </a>
+              <p style={{fontSize:12, color:'var(--muted)', marginTop:8, lineHeight:1.8}}>Text is fastest. We typically reply within a few hours. For shows, let us know the date, venue, and vibe — we'll take it from there.</p>
+            </div>
           </div>
         </div>
       </section>
