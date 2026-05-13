@@ -389,7 +389,7 @@ function Hero() {
   return (
     <section id="hero" data-screen-label="01 Hero">
       <div className="hero-bg">
-        <img src="uploads/IMG_E3445.webp" alt="Low Expectations live on stage" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 20%' }} />
+        <img src="uploads/hero.webp" alt="Low Expectations live on stage" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 20%' }} />
       </div>
       <div className="hero-content">
         <div className="hero-eyebrow reveal visible">Rock Covers · Washington, DC</div>
@@ -438,18 +438,41 @@ function About() {
 }
 
 /* ── Shows ── */
-const showsData = [
-{ date: 'MAY 30', day: 'Saturday', venue: 'PorchFest DC', city: '4217 4th St NW, Washington, DC · 3PM · Free', status: 'upcoming', link: '#contact' },
-{ date: 'JUL 03', day: 'Thursday', venue: 'Marx Cafe', city: '3203 Mt Pleasant St NW, Washington, DC · Free', status: 'upcoming', link: '#contact' }];
-
+function parseCSV(text) {
+  const [headerLine, ...rows] = text.trim().split('\n');
+  const headers = headerLine.split(',').map(h => h.trim());
+  return rows.filter(r => r.trim()).map(row => {
+    const fields = [];
+    let cur = '', inQ = false;
+    for (let ch of row) {
+      if (ch === '"') { inQ = !inQ; }
+      else if (ch === ',' && !inQ) { fields.push(cur.trim()); cur = ''; }
+      else { cur += ch; }
+    }
+    fields.push(cur.trim());
+    return Object.fromEntries(headers.map((h, i) => [h, fields[i] ?? '']));
+  });
+}
 
 function Shows() {
   const ref = useReveal();
+  const [showsData, setShowsData] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    fetch('shows.csv?v=' + Date.now())
+      .then(r => r.text())
+      .then(text => { setShowsData(parseCSV(text)); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
   return (
     <div id="shows-wrap">
       <section id="shows" data-screen-label="03 Shows">
         <div className="section-label">Upcoming Shows</div>
         <div className="reveal" ref={ref}>
+          {loading && <p style={{color:'var(--muted)',fontSize:13}}>Loading shows…</p>}
+          {!loading && showsData.length === 0 && <p style={{color:'var(--muted)',fontSize:13}}>No upcoming shows scheduled. Check back soon.</p>}
           {showsData.map((s, i) =>
           <div className="show-row" key={i}>
               <div>
