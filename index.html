@@ -454,6 +454,23 @@ function parseCSV(text) {
   });
 }
 
+/* shows.csv dates carry no year ("SEP 05"). Pick the one that makes sense:
+ * upcoming → next occurrence (today counts), ended → most recent past one,
+ * no status → whichever is nearest. */
+const MONTHS = { JAN:0, FEB:1, MAR:2, APR:3, MAY:4, JUN:5, JUL:6, AUG:7, SEP:8, OCT:9, NOV:10, DEC:11 };
+function showYear(s, now = new Date()) {
+  const y = now.getFullYear();
+  const m = /^([A-Za-z]{3})\s+(\d{1,2})$/.exec((s.date || '').trim());
+  if (!m || !(m[1].toUpperCase() in MONTHS)) return y;
+  const today = new Date(y, now.getMonth(), now.getDate());
+  const cands = [y - 1, y, y + 1].map(yy => new Date(yy, MONTHS[m[1].toUpperCase()], +m[2]));
+  const status = (s.status || '').toLowerCase();
+  const pick = status === 'ended' ? cands.filter(d => d < today).pop()
+    : status === 'upcoming' ? cands.find(d => d >= today)
+    : cands.slice().sort((a, b) => Math.abs(a - today) - Math.abs(b - today))[0];
+  return (pick || cands[1]).getFullYear();
+}
+
 function Shows() {
   const ref = useReveal();
   const [showsData, setShowsData] = React.useState([]);
@@ -477,7 +494,7 @@ function Shows() {
           <div className="show-row" key={i}>
               <div>
                 <div className="show-date">{s.date}</div>
-                <div className="show-date-sub">{s.day} · 2026</div>
+                <div className="show-date-sub">{s.day} · {showYear(s)}</div>
               </div>
               <div>
                 <div className="show-venue">{s.venue}</div>
@@ -613,7 +630,7 @@ function Contact() {
 function Footer() {
   return (
     <footer>
-      <span>Low Expectations © 2026</span>
+      <span>Low Expectations © {new Date().getFullYear()}</span>
       <span>Washington, DC · Rock Cover Band</span>
       <a href="https://www.instagram.com/lowexpectations.dc" target="_blank" rel="noopener" style={{ color: 'var(--muted)', textDecoration: 'none', letterSpacing: '0.1em' }}>Instagram ↗</a>
     </footer>);
