@@ -21,6 +21,10 @@ const ROOT = path.resolve(__dirname, '..');
 const DATA_FILE = path.join(ROOT, 'assets', 'site.bin');
 const IMG_DIR = path.join(ROOT, 'assets', 'img');
 const SHOWS_FILE = path.join(ROOT, 'shows.csv');
+const GALLERY_FILE = path.join(ROOT, 'gallery.json');
+const UPLOADS_DIR = path.join(ROOT, 'uploads');
+const HERO_SRC = 'uploads/hero.webp';
+const MAX_GALLERY_BYTES = 3 * 1024 * 1024;
 const EDITOR_HTML = path.join(__dirname, 'site-editor.html');
 const PORT = 4373;
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
@@ -180,6 +184,48 @@ function validarShows(shows) {
   return err;
 }
 
+/* ---------- gallery helpers ----------
+ * gallery.json: [{ src: "uploads/<file>.webp", alt: "..." }] in display order.
+ * The browser resizes/converts to WebP before uploading; the server only
+ * checks the bytes really are WebP and keeps uploads/ free of orphans. */
+
+function readGallery() {
+  return fs.existsSync(GALLERY_FILE) ? JSON.parse(fs.readFileSync(GALLERY_FILE, 'utf8')) : [];
+}
+
+function isWebp(buf) {
+  return buf.length > 12 && buf.toString('ascii', 0, 4) === 'RIFF' && buf.toString('ascii', 8, 12) === 'WEBP';
+}
+
+function validarGaleria(items) {
+  const err = [];
+  if (!Array.isArray(items)) return ['La galería debe ser una lista'];
+  const seen = new Set();
+  items.forEach((it, i) => {
+    const at = 'Foto #' + (i + 1) + ': ';
+    if (!it || typeof it.src !== 'string' || !/^uploads\/[A-Za-z0-9._-]+\.webp$/.test(it.src)) { err.push(at + 'ruta inválida'); return; }
+    if (seen.has(it.src)) err.push(at + 'repetida ' + it.src);
+    seen.add(it.src);
+    if (!fs.existsSync(path.join(ROOT, it.src))) err.push(at + 'no existe el archivo ' + it.src);
+    if (typeof it.alt !== 'string') err.push(at + 'alt debe ser texto');
+  });
+  return err;
+}
+
+function slug(name) {
+  return String(name || 'foto').normalize('NFKD').replace(/[^\w.-]+/g, '-').replace(/\.[^.]*$/, '').replace(/^-+|-+$/g, '').toLowerCase().slice(0, 40) || 'foto';
+}
+
+/* Remove anything in uploads/ that neither the gallery nor the hero uses. */
+function pruneUploads(items, lines) {
+  const keep = new Set(items.map(it => path.basename(it.src)).concat([path.basename(HERO_SRC)]));
+  let n = 0;
+  for (const f of fs.readdirSync(UPLOADS_DIR)) {
+    if (!keep.has(f) && fs.statSync(path.join(UPLOADS_DIR, f)).isFile()) { fs.unlinkSync(path.join(UPLOADS_DIR, f)); n++; }
+  }
+  if (n) lines.push('Archivos sin usar eliminados de uploads/: ' + n);
+}
+
 /* ---------- http plumbing ---------- */
 
 function readBody(req, limit) {
@@ -219,6 +265,42 @@ async function handle(req, res) {
   // <img> tags cannot set headers, so image previews pass the token as ?t=
   if (req.headers['x-caja-token'] !== TOKEN && url.searchParams.get('t') !== TOKEN) {
     return send(res, 403, { error: 'Token inválido; recargá la página' });
+  }
+
+  if (req.method === 'GET' && p.startsWith('/uploads/')) {
+    const file = path.join(UPLOADS_DIR, path.basename(p));
+    if (!fs.existsSync(file)) throw Object.assign(new Error('No existe'), { status: 404 });
+    return send(res, 200, fs.readFileSync(file), 'image/webp');
+  }
+
+  if (req.method === 'GET' && p === '/api/galeria') {
+    return send(res, 200, { items: readGallery(), hero: HERO_SRC + '?v=' + Date.now() });
+  }
+
+  if (req.method === 'POST' && p === '/api/galeria/imagen') {
+    const bytes = await readBody(req, MAX_GALLERY_BYTES);
+    if (!isWebp(bytes)) throw Object.assign(new Error('La imagen debe llegar como WebP'), { status: 400 });
+    const base = slug(decodeURIComponent(req.headers['x-nombre'] || ''));
+    let name, i = 0;
+    do { name = base + '-' + Date.now().toString(36) + (i ? '-' + i : '') + '.webp'; i++; } while (fs.existsSync(path.join(UPLOADS_DIR, name)));
+    writeAtomic(path.join(UPLOADS_DIR, name), bytes);
+    return send(res, 200, { src: 'uploads/' + name, bytes: bytes.length });
+  }
+
+  if (req.method === 'POST' && p === '/api/galeria') {
+    const { items, hero } = JSON.parse(await readBody(req, 2e6));
+    const errores = validarGaleria(items);
+    if (hero != null && !items.some(it => it.src === hero)) errores.push('La foto elegida como hero no está en la galería');
+    if (errores.length) return send(res, 400, { error: 'La galería tiene errores', errores });
+    const lines = [];
+    if (!NO_PULL) pull(lines);
+    const clean = items.map(it => ({ src: it.src, alt: it.alt.trim() || 'Low Expectations live' }));
+    writeAtomic(GALLERY_FILE, JSON.stringify(clean, null, 2) + '\n');
+    lines.push('gallery.json escrito: ' + clean.length + ' fotos');
+    if (hero) { fs.copyFileSync(path.join(ROOT, hero), path.join(ROOT, HERO_SRC)); lines.push('Hero actualizado desde ' + hero); }
+    pruneUploads(clean, lines);
+    publish(lines, ['gallery.json', 'uploads']);
+    return send(res, 200, { ok: true, log: lines });
   }
 
   if (req.method === 'GET' && p === '/api/shows') {

@@ -512,25 +512,21 @@ function Shows() {
 }
 
 /* ── Gallery ── */
-const galleryItems = [
-{ src: 'uploads/fullband-stage-wide.webp', alt: 'Low Expectations full band on stage' },
-{ src: 'uploads/vocalist.webp', alt: 'Vocalist performing live' },
-{ src: 'uploads/band-portrait.webp', alt: 'Band portrait on stage' },
-{ src: 'uploads/crowd-stage-wide.webp', alt: 'Crowd and stage wide shot' },
-{ src: 'uploads/drummer-action-shot.webp', alt: 'Drummer live on stage' },
-{ src: 'uploads/guitarist-hands.webp', alt: 'Guitarist with PRS guitar' },
-{ src: 'uploads/gal1.webp', alt: 'Vocalist and guitarist — blue light' },
-{ src: 'uploads/gal2.webp', alt: 'Vocalist and guitarist at Marx Cafe' },
-{ src: 'uploads/gal3.webp', alt: 'Saxophonist in green light' },
-{ src: 'uploads/gal4.webp', alt: 'Full band at private event' },
-{ src: 'uploads/gal5.webp', alt: 'Vocalist and guitarist close-up' },
-{ src: 'uploads/gal6.webp', alt: 'Vocalist at the mic' },
-{ src: 'uploads/gal7.webp', alt: 'Full band wide shot at Marx Cafe' },
-{ src: 'uploads/gal8.webp', alt: 'Bassist close-up' },
-];
+/* Gallery photos live in gallery.json (edited with tools/site.js). */
+function useGallery() {
+  const [items, setItems] = useState([]);
+  useEffect(() => {
+    fetch('gallery.json?v=' + Date.now())
+      .then(r => r.json())
+      .then(list => setItems(Array.isArray(list) ? list : []))
+      .catch(() => setItems([]));
+  }, []);
+  return items;
+}
 
 
 function Gallery() {
+  const galleryItems = useGallery();
   const [active, setActive] = useState(null);
   const ref = useReveal();
 

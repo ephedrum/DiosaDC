@@ -57,13 +57,42 @@
   .sh .pick { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
   .sh td { position:relative; }
   .sh .mv { padding:2px 7px; }
+  .g-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; }
+  .g-card { background:var(--panel); border-radius:8px; overflow:hidden; }
+  .g-card img { width:100%; aspect-ratio:4/3; object-fit:cover; display:block; background:#000; }
+  .g-card .b { padding:8px; }
+  .g-card input { font-size:13px; padding:6px 8px; }
+  .g-card .acts { display:flex; gap:4px; margin-top:6px; }
+  .g-card .acts .spacer { flex:1; }
+  .g-card.is-hero { outline:2px solid var(--ok); }
+  .g-hero { display:flex; gap:14px; align-items:center; background:var(--panel); border-radius:8px; padding:10px 14px; margin:12px 0; }
+  .g-hero img { height:70px; width:180px; object-fit:cover; border-radius:4px; }
+  #tab-galeria.drop { outline:3px dashed var(--accent); outline-offset:-6px; }
+  .btn-file { display:inline-block; padding:8px 14px; border-radius:6px; background:var(--accent); color:#fff; font-weight:600; cursor:pointer; }
+  .btn-file input { display:none; }
   .hidden { display:none !important; }
   @media (max-width:640px) { .row { grid-template-columns:1fr; } th.opt, td.opt { display:none; } }
 </style>
 </head>
 <body>
 <main>
-  <nav class="tabs"><button class="on" data-tab="shows">Shows</button><button data-tab="caja">Caja</button></nav>
+  <nav class="tabs"><button class="on" data-tab="shows">Shows</button><button data-tab="galeria">Galería</button><button data-tab="caja">Caja</button></nav>
+
+  <section id="tab-galeria" class="hidden">
+    <h1>Galería</h1>
+    <p class="sub">Las fotos se achican a 1600px y se convierten a WebP en este navegador antes de subirse. Arrastrá fotos acá o usá el botón. El orden es el de la página.</p>
+    <div class="toolbar">
+      <label class="btn-file">+ Fotos<input type="file" id="g-file" multiple accept="image/*"></label>
+      <span class="sub" id="g-progress"></span>
+      <span class="spacer"></span>
+      <span class="dirty hidden" id="g-dirty">● cambios sin publicar</span>
+      <button class="primary" id="g-save">Guardar y publicar</button>
+    </div>
+    <div id="g-err" class="err hidden"></div>
+    <div id="g-log" class="log hidden"></div>
+    <div class="g-hero"><img id="g-hero-img" alt="Hero"><div><div class="k" style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Hero (banner principal)</div><div id="g-hero-txt">uploads/hero.webp</div></div></div>
+    <div class="g-grid" id="g-grid"></div>
+  </section>
 
   <section id="tab-shows">
     <h1>Shows</h1>
@@ -211,6 +240,7 @@ document.querySelector('.tabs').addEventListener('click', e => {
   const b = e.target.closest('[data-tab]'); if (!b) return;
   document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b));
   $('#tab-shows').classList.toggle('hidden', b.dataset.tab !== 'shows');
+  $('#tab-galeria').classList.toggle('hidden', b.dataset.tab !== 'galeria');
   $('#tab-caja').classList.toggle('hidden', b.dataset.tab !== 'caja');
 });
 
@@ -289,6 +319,100 @@ $('#sh-save').addEventListener('click', async () => {
   } finally { btn.disabled = false; btn.textContent = 'Guardar y publicar'; }
 });
 (async () => { ({ shows } = await api('GET', '/api/shows')); renderShows(); })();
+
+/* ---------- gallery ---------- */
+let galeria = [];
+let galeriaDirty = false;
+let heroPendiente = null;
+
+function marcarGaleria() { galeriaDirty = true; $('#g-dirty').classList.remove('hidden'); }
+function imgUrl(src) { return '/' + src + '?t=' + TOKEN; }
+
+function renderGaleria() {
+  $('#g-dirty').classList.toggle('hidden', !galeriaDirty);
+  $('#g-hero-txt').textContent = heroPendiente ? 'Se reemplazará por ' + heroPendiente + ' al publicar' : 'uploads/hero.webp';
+  $('#g-grid').innerHTML = galeria.map((it, i) => `<div class="g-card${it.src === heroPendiente ? ' is-hero' : ''}" data-i="${i}">
+    <img src="${imgUrl(it.src)}" alt="">
+    <div class="b">
+      <input data-f="alt" value="${esc(it.alt)}" placeholder="Descripción (alt), opcional">
+      <div class="acts"><button class="small" data-up title="Antes">↑</button><button class="small" data-down title="Después">↓</button><button class="small" data-hero title="Usar como banner">Hero</button><span class="spacer"></span><button class="small" data-del>Borrar</button></div>
+    </div>
+  </div>`).join('');
+}
+
+$('#g-grid').addEventListener('input', e => {
+  if (e.target.dataset.f !== 'alt') return;
+  galeria[+e.target.closest('.g-card').dataset.i].alt = e.target.value; marcarGaleria();
+});
+$('#g-grid').addEventListener('click', e => {
+  const card = e.target.closest('.g-card'); if (!card) return;
+  const i = +card.dataset.i;
+  if (e.target.matches('[data-del]')) {
+    if (!confirm('¿Quitar esta foto de la galería? El archivo se borra del repo al publicar.')) return;
+    if (galeria[i].src === heroPendiente) heroPendiente = null;
+    galeria.splice(i, 1);
+  } else if (e.target.matches('[data-up]') && i > 0) [galeria[i - 1], galeria[i]] = [galeria[i], galeria[i - 1]];
+  else if (e.target.matches('[data-down]') && i < galeria.length - 1) [galeria[i + 1], galeria[i]] = [galeria[i], galeria[i + 1]];
+  else if (e.target.matches('[data-hero]')) heroPendiente = heroPendiente === galeria[i].src ? null : galeria[i].src;
+  else return;
+  marcarGaleria(); renderGaleria();
+});
+
+/* Resize + convert in the browser so the repo only ever gets small WebP files. */
+async function aWebp(file, max = 1600, calidad = 0.85) {
+  let bmp;
+  try { bmp = await createImageBitmap(file, { imageOrientation: 'from-image' }); }
+  catch (_) { throw new Error(file.name + ': este navegador no puede leer ese formato (¿HEIC? exportalo como JPEG)'); }
+  const k = Math.min(1, max / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas');
+  c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  bmp.close();
+  const blob = await new Promise(r => c.toBlob(r, 'image/webp', calidad));
+  if (!blob || blob.type !== 'image/webp') throw new Error('Este navegador no puede generar WebP; probá con Chrome o Firefox actualizados');
+  return blob;
+}
+
+async function subirFotos(files) {
+  const list = [...files].filter(f => f.type.startsWith('image/') || /\.(heic|heif)$/i.test(f.name));
+  const err = $('#g-err'); err.classList.add('hidden');
+  const fallos = [];
+  for (let n = 0; n < list.length; n++) {
+    $('#g-progress').textContent = 'Procesando ' + (n + 1) + ' de ' + list.length + '…';
+    try {
+      const blob = await aWebp(list[n]);
+      const r = await api('POST', '/api/galeria/imagen', blob, { 'Content-Type': 'image/webp', 'x-nombre': encodeURIComponent(list[n].name) });
+      galeria.splice(n, 0, { src: r.src, alt: '' });
+      marcarGaleria(); renderGaleria();
+    } catch (ex) { fallos.push(ex.message); }
+  }
+  $('#g-progress').textContent = list.length ? list.length - fallos.length + ' foto(s) lista(s)' : '';
+  if (fallos.length) { err.textContent = fallos.join('\n'); err.classList.remove('hidden'); }
+}
+$('#g-file').addEventListener('change', e => { subirFotos(e.target.files); e.target.value = ''; });
+const gsec = $('#tab-galeria');
+gsec.addEventListener('dragover', e => { e.preventDefault(); gsec.classList.add('drop'); });
+gsec.addEventListener('dragleave', () => gsec.classList.remove('drop'));
+gsec.addEventListener('drop', e => { e.preventDefault(); gsec.classList.remove('drop'); subirFotos(e.dataTransfer.files); });
+
+$('#g-save').addEventListener('click', async () => {
+  const btn = $('#g-save'), err = $('#g-err'), lg = $('#g-log');
+  err.classList.add('hidden'); lg.classList.add('hidden');
+  btn.disabled = true; btn.textContent = 'Publicando…';
+  try {
+    const r = await api('POST', '/api/galeria', { items: galeria, hero: heroPendiente });
+    lg.textContent = r.log.join('\n'); lg.classList.remove('hidden');
+    galeriaDirty = false; heroPendiente = null;
+    $('#g-hero-img').src = imgUrl('uploads/hero.webp') + '&v=' + Date.now();
+    renderGaleria();
+  } catch (ex) {
+    err.textContent = ex.message + (ex.errores ? '\n' + ex.errores.join('\n') : ''); err.classList.remove('hidden');
+  } finally { btn.disabled = false; btn.textContent = 'Guardar y publicar'; }
+});
+(async () => {
+  const r = await api('GET', '/api/galeria');
+  galeria = r.items; $('#g-hero-img').src = imgUrl('uploads/hero.webp'); renderGaleria();
+})();
 
 /* ---------- gate ---------- */
 let modoCrear = false;
@@ -531,7 +655,7 @@ $('#btn-save').addEventListener('click', async () => {
     err.textContent = ex.message + (ex.errores ? '\n' + ex.errores.join('\n') : ''); err.classList.remove('hidden');
   } finally { btn.disabled = false; btn.textContent = 'Guardar y publicar'; }
 });
-window.addEventListener('beforeunload', e => { if (dirty || showsDirty) { e.preventDefault(); e.returnValue = ''; } });
+window.addEventListener('beforeunload', e => { if (dirty || showsDirty || galeriaDirty) { e.preventDefault(); e.returnValue = ''; } });
 </script>
 </body>
 </html>
