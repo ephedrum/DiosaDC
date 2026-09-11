@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Backstage — Low Expectations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black:#080808; --surface:#141414; --surface2:#1c1c1c; --rule:#242424;
+    --muted:#7a7a7a; --light:#a5a19a; --bone:#c8c3b8; --white:#f0ede6;
+    --accent:#b8312f; --pos:#8db2ff; --pend:#e5b45c;
+  }
+  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+  html { color-scheme:dark; }
+  body { background:var(--black); color:var(--white); font-family:'Space Grotesk', system-ui, sans-serif; font-size:16px; line-height:1.5; -webkit-font-smoothing:antialiased; min-height:100vh; }
+  main { max-width:760px; margin:0 auto; padding:28px 20px 80px; }
+  .brand { font-family:'Bebas Neue', sans-serif; font-size:22px; letter-spacing:.06em; color:var(--bone); text-decoration:none; }
+  h1 { font-family:'Bebas Neue', sans-serif; font-size:44px; letter-spacing:.03em; line-height:1; margin:26px 0 6px; }
+  .sub { color:var(--muted); font-size:14px; }
+  button { font:inherit; cursor:pointer; border:0; border-radius:6px; padding:12px 18px; background:var(--surface2); color:var(--white); }
+  button.primary { background:var(--accent); font-weight:600; letter-spacing:.02em; }
+  button.link { background:transparent; color:var(--light); padding:6px 0; font-size:13px; text-decoration:underline; text-underline-offset:3px; }
+  input { font:inherit; width:100%; padding:14px 16px; border:0; border-bottom:2px solid var(--rule); border-radius:0; background:var(--surface); color:var(--white); outline:none; }
+  input:focus { border-bottom-color:var(--accent); }
+  .hidden { display:none !important; }
+  .err { color:#ff9a9a; font-size:14px; margin-top:12px; }
+
+  /* gate */
+  #gate { max-width:420px; margin-top:12vh; }
+  #gate form { margin-top:22px; display:grid; gap:14px; }
+
+  /* summary */
+  .hero { background:var(--surface); border-radius:12px; padding:22px 22px 18px; margin-top:22px; }
+  .hero .k { font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
+  .hero .v { font-family:'Bebas Neue', sans-serif; font-size:64px; line-height:1; margin-top:4px; letter-spacing:.02em; }
+  .hero .status { margin-top:10px; font-size:14px; color:var(--light); }
+  .hero .status b { color:var(--pos); font-weight:600; }
+  .hero .status b.warn { color:var(--pend); }
+  .tiles { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-top:10px; }
+  .tile { background:var(--surface); border-radius:12px; padding:16px 18px; }
+  .tile .k { font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
+  .tile .v { font-size:24px; font-weight:600; margin-top:4px; font-variant-numeric:tabular-nums; }
+  .tile.pos .v { color:var(--pos); } .tile.pend .v { color:var(--pend); }
+  .years { display:flex; gap:6px; flex-wrap:wrap; }
+  .years button { padding:6px 12px; font-size:13px; color:var(--light); }
+  .years button.on { background:var(--accent); color:#fff; }
+  .sec-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin:36px 0 12px; }
+  .sec-head h2 { margin:0; }
+  @media (max-width:520px) { .tiles { grid-template-columns:1fr 1fr; } .hero .v { font-size:54px; } }
+
+  /* cards */
+  h2 { font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin:36px 0 12px; font-weight:500; }
+  .card { background:var(--surface); border-radius:12px; padding:18px 20px; margin-bottom:12px; }
+  .card.dist { background:var(--surface2); }
+  .card-head { display:flex; justify-content:space-between; align-items:baseline; gap:12px; }
+  .card-head .t { font-size:18px; font-weight:600; }
+  .card-head .d { font-size:13px; color:var(--muted); white-space:nowrap; }
+  .card-net { font-size:22px; font-weight:600; margin-top:2px; font-variant-numeric:tabular-nums; }
+  .card-net.pos { color:var(--pos); } .card-net.neg { color:var(--bone); }
+  .card-net small { font-size:12px; color:var(--muted); font-weight:400; margin-left:8px; }
+  .mov { display:grid; grid-template-columns:1fr auto; gap:4px 14px; padding:12px 0 0; margin-top:12px; border-top:1px solid var(--rule); }
+  .mov .c { color:var(--bone); font-size:15px; }
+  .mov .meta { color:var(--muted); font-size:12px; grid-column:1; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .mov .a { font-variant-numeric:tabular-nums; font-weight:600; white-space:nowrap; text-align:right; }
+  .mov .a.pos { color:var(--pos); } .mov .a.pend { color:var(--pend); }
+  .badge { font-size:11px; padding:1px 8px; border-radius:10px; background:#3a2c12; color:var(--pend); letter-spacing:.04em; }
+  .dist-list { display:flex; flex-wrap:wrap; gap:8px 18px; margin-top:12px; color:var(--bone); font-size:15px; }
+  .dist-list span b { color:var(--muted); font-weight:400; margin-left:4px; }
+  .foot { margin-top:40px; display:flex; justify-content:space-between; align-items:center; gap:12px; color:var(--muted); font-size:12px; flex-wrap:wrap; }
+
+  /* lightbox */
+  #box { position:fixed; inset:0; background:rgba(0,0,0,.92); display:flex; align-items:center; justify-content:center; padding:20px; z-index:10; }
+  #box img { max-width:100%; max-height:92vh; border-radius:8px; }
+  #box .close { position:absolute; top:14px; right:14px; }
+</style>
+</head>
+<body>
+<main>
+  <a class="brand" href="index.html">Low Expectations</a>
+
+  <section id="gate">
+    <h1>Backstage</h1>
+    <p class="sub">Solo para la banda. Ingresá la contraseña compartida.</p>
+    <form id="gate-form">
+      <input type="password" id="pass" placeholder="Contraseña" autocomplete="current-password" autofocus>
+      <button class="primary" id="gate-btn" type="submit">Entrar</button>
+      <div class="err hidden" id="gate-err"></div>
+    </form>
+  </section>
+
+  <section id="app" class="hidden">
+    <h1>Caja de la banda</h1>
+    <p class="sub" id="updated"></p>
+    <div class="hero">
+      <div class="k">Fondo actual</div>
+      <div class="v" id="fondo"></div>
+      <div class="status" id="status"></div>
+    </div>
+    <div class="tiles" id="tiles"></div>
+
+    <section id="anual" class="hidden">
+      <div class="sec-head"><h2>Resumen del año</h2><div class="years" id="years"></div></div>
+      <div class="tiles" id="year-tiles"></div>
+    </section>
+
+    <h2>Movimientos</h2>
+    <div id="cards"></div>
+
+    <div class="foot">
+      <span>Los datos viajan encriptados; la contraseña nunca sale de tu dispositivo.</span>
+      <button class="link" id="salir">Salir en este dispositivo</button>
+    </div>
+  </section>
+</main>
+
+<div id="box" class="hidden"><button class="close" id="box-close">Cerrar</button><img id="box-img" alt="Comprobante"></div>
+
+<script src="assets/crypto.js"></script>
+<script src="assets/model.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const STORE = 'backstage.sesion';
+const DATA_URL = 'assets/site.bin';
+let key = null;
+let libro = null;
+const imgCache = new Map();
+
+async function fetchBytes(url) {
+  const r = await fetch(url + '?v=' + Date.now(), { cache: 'no-store' });
+  if (!r.ok) throw new Error('No se pudo cargar (' + r.status + ')');
+  return new Uint8Array(await r.arrayBuffer());
+}
+
+function leerSesion() { try { return JSON.parse(localStorage.getItem(STORE)); } catch (_) { return null; } }
+function guardarSesion(s) { try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (_) {} }
+function borrarSesion() { try { localStorage.removeItem(STORE); } catch (_) {} }
+
+/* Try the key remembered on this device; it only works while the ledger's salt
+ * (i.e. the password) is unchanged. */
+async function init() {
+  let file;
+  try { file = await fetchBytes(DATA_URL); }
+  catch (e) { mostrarError('Todavía no hay datos publicados.'); return; }
+  const salt = DCrypt.toBase64(DCrypt.readSalt(file));
+  const s = leerSesion();
+  if (s && s.salt === salt) {
+    try {
+      key = await DCrypt.importKey(DCrypt.fromBase64(s.key));
+      libro = await DCrypt.decryptJSON(key, file);
+      return mostrar();
+    } catch (_) { borrarSesion(); }
+  }
+  $('#gate-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = $('#gate-btn'); btn.disabled = true; btn.textContent = 'Verificando…';
+    $('#gate-err').classList.add('hidden');
+    try {
+      const k = await DCrypt.deriveKey($('#pass').value, DCrypt.fromBase64(salt), true);
+      libro = await DCrypt.decryptJSON(k, file);
+      key = k;
+      guardarSesion({ salt, key: DCrypt.toBase64(await DCrypt.exportKey(k)) });
+      mostrar();
+    } catch (ex) {
+      mostrarError(ex.message);
+    } finally { btn.disabled = false; btn.textContent = 'Entrar'; }
+  });
+}
+function mostrarError(msg) { const el = $('#gate-err'); el.textContent = msg; el.classList.remove('hidden'); }
+
+function mostrar() {
+  $('#gate').classList.add('hidden'); $('#app').classList.remove('hidden');
+  const r = Ledger.resumen(libro);
+  $('#updated').textContent = libro.actualizado ? 'Actualizado el ' + Ledger.fmtFecha(libro.actualizado.slice(0, 10)) : '';
+  $('#fondo').textContent = Ledger.fmtMonto(r.fondo);
+  $('#status').innerHTML = r.completo
+    ? 'Reserva de ' + Ledger.fmtMonto(r.reserva) + ': <b>COMPLETA</b>'
+    : 'Reserva de ' + Ledger.fmtMonto(r.reserva) + ': <b class="warn">faltan ' + Ledger.fmtMonto(r.faltante) + '</b>';
+  const tile = (k, v, cls) => `<div class="tile ${cls || ''}"><div class="k">${k}</div><div class="v">${v}</div></div>`;
+  $('#tiles').innerHTML =
+    tile('Para distribuir', Ledger.fmtMonto(r.disponible)) +
+    tile('Por miembro (÷' + r.miembros + ')', Ledger.fmtMonto(r.porMiembro), 'pos') +
+    tile('Pendiente de cobro', Ledger.fmtMonto(r.pendienteCobrar), r.pendienteCobrar ? 'pend' : '');
+
+  anual = Ledger.porAnio(libro);
+  mostrarAnio(Ledger.anioInicial(anual.anios));
+
+  $('#cards').innerHTML = Ledger.grupos(libro).map(g => {
+    const fecha = g.desde === g.hasta ? Ledger.fmtFecha(g.hasta) : Ledger.fmtFecha(g.desde) + ' – ' + Ledger.fmtFecha(g.hasta);
+    if (g.clase === 'distribucion') {
+      const total = g.movimientos.reduce((s, m) => s + m.monto, 0);
+      return `<div class="card dist">
+        <div class="card-head"><div class="t">${esc(g.titulo)}</div><div class="d">${fecha}</div></div>
+        <div class="card-net neg">−${Ledger.fmtMonto(total)}<small>${g.movimientos.length} miembros</small></div>
+        <div class="dist-list">${g.movimientos.map(m => `<span>${esc(m.miembro)}<b>${Ledger.fmtMonto(m.monto)}</b></span>`).join('')}</div>
+      </div>`;
+    }
+    const netoCls = g.neto >= 0 ? 'pos' : 'neg';
+    const pend = g.pendiente ? `<small>+ ${Ledger.fmtMonto(g.pendiente)} pendiente</small>` : '';
+    return `<div class="card">
+      <div class="card-head"><div class="t">${esc(g.titulo)}</div><div class="d">${fecha}</div></div>
+      <div class="card-net ${netoCls}">${g.neto < 0 ? '−' : ''}${Ledger.fmtMonto(Math.abs(g.neto))}${pend}</div>
+      ${g.movimientos.map(m => `<div class="mov">
+        <div class="c">${esc(m.concepto) || Ledger.TIPO_LABEL[m.tipo]}</div>
+        <div class="a ${m.estado === 'pendiente' ? 'pend' : m.tipo === 'ingreso' ? 'pos' : ''}">${Ledger.fmtSigned(m)}</div>
+        <div class="meta">${Ledger.fmtFecha(m.fecha)}${m.estado === 'pendiente' ? ' <span class="badge">Pendiente</span>' : ''}${m.imagen ? ` <button class="link" data-img="${m.imagen.id}" data-mime="${m.imagen.mime}">Ver comprobante</button>` : ''}</div>
+      </div>`).join('')}
+    </div>`;
+  }).join('');
+}
+let anual = null;
+function mostrarAnio(y) {
+  const sec = $('#anual');
+  if (!y) { sec.classList.add('hidden'); return; }
+  sec.classList.remove('hidden');
+  const r = anual.por[y];
+  const tile = (k, v, cls) => `<div class="tile ${cls || ''}"><div class="k">${k}</div><div class="v">${v}</div></div>`;
+  $('#years').innerHTML = anual.anios.map(a => `<button class="${a === y ? 'on' : ''}" data-year="${a}">${a}</button>`).join('');
+  $('#year-tiles').innerHTML =
+    tile('Ingresos ' + y, Ledger.fmtMonto(r.ingresos), 'pos') +
+    tile('Gastos ' + y, Ledger.fmtMonto(r.gastos)) +
+    tile('Distribuido ' + y, Ledger.fmtMonto(r.distribuido));
+}
+$('#years').addEventListener('click', e => { const b = e.target.closest('[data-year]'); if (b) mostrarAnio(b.dataset.year); });
+
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+/* Receipts are decrypted on demand and kept as blob URLs for the session. */
+$('#cards').addEventListener('click', async e => {
+  const b = e.target.closest('[data-img]'); if (!b) return;
+  const id = b.dataset.img;
+  b.disabled = true;
+  try {
+    if (!imgCache.has(id)) {
+      const bytes = await DCrypt.decryptBytes(key, await fetchBytes('assets/img/' + id + '.bin'));
+      imgCache.set(id, URL.createObjectURL(new Blob([bytes], { type: b.dataset.mime })));
+    }
+    $('#box-img').src = imgCache.get(id);
+    $('#box').classList.remove('hidden');
+  } catch (ex) { alert('No se pudo abrir el comprobante: ' + ex.message); }
+  finally { b.disabled = false; }
+});
+$('#box').addEventListener('click', e => { if (e.target.id !== 'box-img') $('#box').classList.add('hidden'); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') $('#box').classList.add('hidden'); });
+$('#salir').addEventListener('click', () => { borrarSesion(); location.reload(); });
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Editor local</title>
+<style>
+  :root { --bg:#111; --panel:#1a1a1a; --panel2:#222; --text:#eee; --muted:#9a9a9a; --accent:#b8312f; --ok:#6e9bff; --warn:#f0b35a; --line:#2c2c2c; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.5 system-ui, sans-serif; }
+  main { max-width:1100px; margin:0 auto; padding:24px 20px 80px; }
+  h1 { font-size:20px; margin:0 0 4px; } h2 { font-size:14px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin:28px 0 10px; }
+  .sub { color:var(--muted); font-size:13px; margin-bottom:20px; }
+  button { font:inherit; padding:8px 14px; border:0; border-radius:6px; background:var(--panel2); color:var(--text); cursor:pointer; }
+  button:hover { filter:brightness(1.15); } button:disabled { opacity:.4; cursor:default; }
+  button.primary { background:var(--accent); color:#fff; font-weight:600; }
+  button.small { padding:4px 9px; font-size:13px; }
+  input, select, textarea { font:inherit; padding:8px 10px; border:1px solid var(--line); border-radius:6px; background:#0d0d0d; color:var(--text); width:100%; }
+  textarea { min-height:70px; resize:vertical; }
+  label { display:block; font-size:12px; color:var(--muted); margin:10px 0 4px; }
+  .tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; }
+  .tile { background:var(--panel); border-radius:8px; padding:12px 14px; }
+  .tile .k { font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+  .tile .v { font-size:22px; font-weight:600; margin-top:2px; }
+  .tile.ok .v { color:var(--ok); } .tile.warn .v { color:var(--warn); }
+  .years { display:inline-flex; gap:4px; margin-left:10px; vertical-align:middle; }
+  .years button { padding:2px 8px; font-size:12px; }
+  .years button.on { background:var(--accent); color:#fff; }
+  .toolbar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:18px 0; }
+  .toolbar .spacer { flex:1; }
+  .dirty { color:var(--warn); font-size:13px; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th, td { text-align:left; padding:8px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:500; }
+  td.num { text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }
+  td.acts { white-space:nowrap; text-align:right; }
+  .pos { color:var(--ok); } .neg { color:#ff8a8a; } .pend { color:var(--warn); }
+  .badge { display:inline-block; font-size:11px; padding:1px 7px; border-radius:10px; background:var(--panel2); color:var(--muted); margin-left:6px; }
+  .badge.pend { background:#3a2c12; color:var(--warn); }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+  .chip { background:var(--panel2); padding:4px 8px 4px 12px; border-radius:16px; display:flex; gap:6px; align-items:center; }
+  .chip button { padding:0 6px; background:transparent; color:var(--muted); }
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  dialog { background:var(--panel); color:var(--text); border:0; border-radius:10px; padding:22px; width:min(560px, 94vw); }
+  dialog::backdrop { background:rgba(0,0,0,.6); }
+  dialog h3 { margin:0 0 8px; }
+  .dlg-acts { display:flex; gap:8px; justify-content:flex-end; margin-top:18px; }
+  .err { background:#3a1515; color:#ffb4b4; padding:10px 12px; border-radius:6px; margin:10px 0; white-space:pre-wrap; font-size:13px; }
+  .log { background:#0d0d0d; padding:12px 14px; border-radius:6px; font:13px/1.6 ui-monospace, monospace; white-space:pre-wrap; margin-top:12px; }
+  .thumb { max-height:120px; max-width:100%; border-radius:6px; display:block; margin-top:6px; }
+  #gate { max-width:420px; margin:80px auto; }
+  .hidden { display:none !important; }
+  @media (max-width:640px) { .row { grid-template-columns:1fr; } th.opt, td.opt { display:none; } }
+</style>
+</head>
+<body>
+<main>
+  <section id="gate">
+    <h1>Caja de la banda</h1>
+    <p class="sub" id="gate-sub">Cargando…</p>
+    <form id="gate-form">
+      <label>Contraseña</label>
+      <input type="password" id="gate-pass" autocomplete="current-password" autofocus>
+      <div id="gate-pass2-wrap" class="hidden"><label>Repetir contraseña</label><input type="password" id="gate-pass2"></div>
+      <div id="gate-err" class="err hidden"></div>
+      <div class="dlg-acts"><button class="primary" id="gate-btn" type="submit">Entrar</button></div>
+    </form>
+  </section>
+
+  <section id="app" class="hidden">
+    <h1>Caja de la banda <span class="badge" id="repo-badge"></span></h1>
+    <p class="sub">Editás acá, y "Guardar y publicar" encripta, hace commit y push. Nada queda en texto plano.</p>
+
+    <div class="tiles" id="tiles"></div>
+
+    <div class="toolbar">
+      <button class="primary" id="btn-nuevo">+ Movimiento</button>
+      <button id="btn-dist">Distribución rápida</button>
+      <button id="btn-import">Importar JSON</button>
+      <button id="btn-export">Exportar respaldo</button>
+      <button id="btn-pass">Cambiar contraseña</button>
+      <span class="spacer"></span>
+      <span class="dirty hidden" id="dirty">● cambios sin publicar</span>
+      <button class="primary" id="btn-save">Guardar y publicar</button>
+    </div>
+    <div id="save-err" class="err hidden"></div>
+    <div id="save-log" class="log hidden"></div>
+
+    <h2 id="anual-h" class="hidden">Resumen del año <span class="years" id="years"></span></h2>
+    <div class="tiles" id="year-tiles"></div>
+
+    <h2>Configuración</h2>
+    <div class="row">
+      <div><label>Reserva de la banda (USD)</label><input type="number" id="cfg-reserva" min="0" step="1"></div>
+      <div>
+        <label>Miembros (<span id="cfg-n"></span>)</label>
+        <div style="display:flex;gap:6px"><input id="cfg-nuevo" placeholder="Nombre"><button id="cfg-add" class="small">Agregar</button></div>
+        <div class="chips" id="cfg-chips"></div>
+      </div>
+    </div>
+
+    <h2>Movimientos (<span id="mov-n"></span>)</h2>
+    <table>
+      <thead><tr><th>Fecha</th><th>Evento / miembro</th><th class="opt">Concepto</th><th>Monto</th><th></th></tr></thead>
+      <tbody id="mov-body"></tbody>
+    </table>
+  </section>
+</main>
+
+<dialog id="dlg-mov">
+  <form method="dialog" id="mov-form">
+    <h3 id="mov-title">Movimiento</h3>
+    <div class="row">
+      <div><label>Fecha</label><input type="date" name="fecha" required></div>
+      <div><label>Tipo</label><select name="tipo"><option value="ingreso">Ingreso</option><option value="gasto">Gasto</option><option value="distribucion">Distribución</option></select></div>
+    </div>
+    <div id="mov-evento-wrap"><label>Evento</label><input name="evento" list="eventos" placeholder="Nombre del evento (agrupa las filas)"><datalist id="eventos"></datalist></div>
+    <div id="mov-miembro-wrap" class="hidden"><label>Miembro</label><select name="miembro"></select></div>
+    <div class="row">
+      <div><label>Monto (USD, siempre positivo)</label><input type="number" name="monto" min="0.01" step="0.01" required></div>
+      <div><label>Estado</label><select name="estado"><option value="ok">Cobrado / pagado</option><option value="pendiente">Pendiente</option></select></div>
+    </div>
+    <label>Concepto</label><textarea name="concepto"></textarea>
+    <label>Comprobante (imagen, opcional)</label>
+    <input type="file" id="mov-file" accept="image/png,image/jpeg,image/webp,image/gif">
+    <div id="mov-img-wrap" class="hidden"><img class="thumb" id="mov-img"><button type="button" class="small" id="mov-img-del" style="margin-top:6px">Quitar imagen</button></div>
+    <div id="mov-err" class="err hidden"></div>
+    <div class="dlg-acts"><button type="button" id="mov-cancel">Cancelar</button><button class="primary" value="ok">Aceptar</button></div>
+  </form>
+</dialog>
+
+<dialog id="dlg-dist">
+  <form method="dialog" id="dist-form">
+    <h3>Distribución de utilidades</h3>
+    <p class="sub">Crea un movimiento por cada miembro con el mismo monto.</p>
+    <div class="row">
+      <div><label>Fecha</label><input type="date" name="fecha" required></div>
+      <div><label>Monto por miembro (USD)</label><input type="number" name="monto" min="0.01" step="0.01" required></div>
+    </div>
+    <label>Concepto</label><input name="concepto" value="Distribución de utilidades">
+    <div class="dlg-acts"><button type="button" id="dist-cancel">Cancelar</button><button class="primary" value="ok">Crear</button></div>
+  </form>
+</dialog>
+
+<dialog id="dlg-pass">
+  <form method="dialog" id="pass-form">
+    <h3>Cambiar contraseña</h3>
+    <p class="sub">Se aplica al publicar. Todos los archivos se re-encriptan y los miembros tendrán que ingresar la nueva contraseña.</p>
+    <label>Nueva contraseña (mínimo 8)</label><input type="password" name="p1" required minlength="8">
+    <label>Repetir</label><input type="password" name="p2" required>
+    <div id="pass-err" class="err hidden"></div>
+    <div class="dlg-acts"><button type="button" id="pass-cancel">Cancelar</button><button class="primary" value="ok">Aceptar</button></div>
+  </form>
+</dialog>
+
+<input type="file" id="import-file" accept="application/json" class="hidden">
+
+<script src="/model.js"></script>
+<script>
+const TOKEN = '__TOKEN__';
+const $ = s => document.querySelector(s);
+let libro = null;
+let dirty = false;
+let nuevaContrasena = null;
+
+/* ---------- api ---------- */
+async function api(method, path, body, headers) {
+  const opts = { method, headers: Object.assign({ 'x-caja-token': TOKEN }, headers || {}) };
+  if (body !== undefined) {
+    if (body instanceof Blob || body instanceof File) opts.body = body;
+    else { opts.body = JSON.stringify(body); opts.headers['Content-Type'] = 'application/json'; }
+  }
+  const r = await fetch(path, opts);
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw Object.assign(new Error(data.error || ('Error ' + r.status)), { errores: data.errores });
+  return data;
+}
+
+/* ---------- gate ---------- */
+let modoCrear = false;
+(async function init() {
+  const st = await api('GET', '/api/estado');
+  $('#repo-badge').textContent = st.repo + (st.noPush ? ' · --no-push' : '');
+  modoCrear = !st.existe;
+  $('#gate-sub').textContent = modoCrear
+    ? 'No existe un libro todavía. Elegí la contraseña compartida de la banda: una frase larga que puedan recordar.'
+    : 'Ingresá la contraseña compartida de la banda.';
+  $('#gate-pass2-wrap').classList.toggle('hidden', !modoCrear);
+  $('#gate-btn').textContent = modoCrear ? 'Crear libro' : 'Entrar';
+})();
+
+$('#gate-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const err = $('#gate-err'); err.classList.add('hidden');
+  const p = $('#gate-pass').value;
+  try {
+    if (modoCrear) {
+      if (p !== $('#gate-pass2').value) throw new Error('Las contraseñas no coinciden');
+      ({ libro } = await api('POST', '/api/crear', { contrasena: p }));
+      dirty = true;
+    } else {
+      $('#gate-btn').disabled = true;
+      ({ libro } = await api('POST', '/api/desbloquear', { contrasena: p }));
+    }
+    $('#gate').classList.add('hidden'); $('#app').classList.remove('hidden');
+    render();
+  } catch (ex) { err.textContent = ex.message; err.classList.remove('hidden'); }
+  finally { $('#gate-btn').disabled = false; }
+});
+
+/* ---------- render ---------- */
+function marcar() { dirty = true; $('#dirty').classList.remove('hidden'); }
+
+function render() {
+  const r = Ledger.resumen(libro);
+  const tile = (k, v, cls) => `<div class="tile ${cls || ''}"><div class="k">${k}</div><div class="v">${v}</div></div>`;
+  $('#tiles').innerHTML =
+    tile('Fondo', Ledger.fmtMonto(r.fondo)) +
+    tile('Reserva ' + Ledger.fmtMonto(r.reserva), r.completo ? 'COMPLETA' : 'Faltan ' + Ledger.fmtMonto(r.faltante), r.completo ? 'ok' : 'warn') +
+    tile('Disponible', Ledger.fmtMonto(r.disponible)) +
+    tile('Por miembro (÷' + r.miembros + ')', Ledger.fmtMonto(r.porMiembro), 'ok') +
+    tile('Pendiente por cobrar', Ledger.fmtMonto(r.pendienteCobrar), r.pendienteCobrar ? 'warn' : '');
+  $('#dirty').classList.toggle('hidden', !dirty);
+
+  anual = Ledger.porAnio(libro);
+  if (!anioSel || !anual.anios.includes(anioSel)) anioSel = Ledger.anioInicial(anual.anios);
+  renderAnio();
+
+  $('#cfg-reserva').value = libro.config.reserva;
+  $('#cfg-n').textContent = libro.config.miembros.length;
+  $('#cfg-chips').innerHTML = libro.config.miembros.map((n, i) =>
+    `<span class="chip">${esc(n)}<button data-i="${i}" title="Quitar">×</button></span>`).join('');
+
+  const movs = [...libro.movimientos].sort((a, b) => b.fecha.localeCompare(a.fecha));
+  $('#mov-n').textContent = movs.length;
+  $('#mov-body').innerHTML = movs.map(m => {
+    const who = m.tipo === 'distribucion' ? 'Utilidades → ' + esc(m.miembro) : esc(m.evento);
+    const cls = m.estado === 'pendiente' ? 'pend' : (m.tipo === 'ingreso' ? 'pos' : 'neg');
+    return `<tr>
+      <td>${Ledger.fmtFecha(m.fecha)}</td>
+      <td>${who}<span class="badge">${Ledger.TIPO_LABEL[m.tipo]}</span>${m.estado === 'pendiente' ? '<span class="badge pend">Pendiente</span>' : ''}${m.imagen ? '<span class="badge" title="' + esc(m.imagen.nombre) + '">📎</span>' : ''}</td>
+      <td class="opt">${esc(m.concepto)}</td>
+      <td class="num ${cls}">${Ledger.fmtSigned(m)}</td>
+      <td class="acts"><button class="small" data-edit="${m.id}">Editar</button> <button class="small" data-del="${m.id}">Borrar</button></td>
+    </tr>`;
+  }).join('');
+  $('#eventos').innerHTML = [...new Set(libro.movimientos.map(m => m.evento).filter(Boolean))].map(e => `<option value="${esc(e)}">`).join('');
+}
+let anual = null, anioSel = null;
+function renderAnio() {
+  $('#anual-h').classList.toggle('hidden', !anioSel);
+  if (!anioSel) { $('#year-tiles').innerHTML = ''; return; }
+  const r = anual.por[anioSel];
+  const tile = (k, v, cls) => `<div class="tile ${cls || ''}"><div class="k">${k}</div><div class="v">${v}</div></div>`;
+  $('#years').innerHTML = anual.anios.map(a => `<button class="${a === anioSel ? 'on' : ''}" data-year="${a}">${a}</button>`).join('');
+  $('#year-tiles').innerHTML =
+    tile('Ingresos ' + anioSel, Ledger.fmtMonto(r.ingresos), 'ok') +
+    tile('Gastos ' + anioSel, Ledger.fmtMonto(r.gastos)) +
+    tile('Distribuido ' + anioSel, Ledger.fmtMonto(r.distribuido));
+}
+$('#years').addEventListener('click', e => { const b = e.target.closest('[data-year]'); if (b) { anioSel = b.dataset.year; renderAnio(); } });
+
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+/* ---------- config ---------- */
+$('#cfg-reserva').addEventListener('change', e => { libro.config.reserva = Number(e.target.value) || 0; marcar(); render(); });
+$('#cfg-add').addEventListener('click', () => {
+  const n = $('#cfg-nuevo').value.trim();
+  if (!n) return;
+  if (libro.config.miembros.some(x => x.toLowerCase() === n.toLowerCase())) return alert('Ese miembro ya existe');
+  libro.config.miembros.push(n); $('#cfg-nuevo').value = ''; marcar(); render();
+});
+$('#cfg-nuevo').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('#cfg-add').click(); } });
+$('#cfg-chips').addEventListener('click', e => {
+  const b = e.target.closest('button[data-i]'); if (!b) return;
+  const n = libro.config.miembros[+b.dataset.i];
+  const usados = libro.movimientos.filter(m => m.tipo === 'distribucion' && m.miembro === n).length;
+  if (usados) return alert(n + ' tiene ' + usados + ' distribuciones registradas; no se puede quitar sin borrarlas primero.');
+  if (!confirm('¿Quitar a ' + n + '?')) return;
+  libro.config.miembros.splice(+b.dataset.i, 1); marcar(); render();
+});
+
+/* ---------- movement dialog ---------- */
+const dlg = $('#dlg-mov'), form = $('#mov-form');
+let editando = null; // id or null
+let imagenActual = null;
+
+function abrirMov(m) {
+  editando = m ? m.id : null;
+  imagenActual = m ? m.imagen : null;
+  $('#mov-title').textContent = m ? 'Editar movimiento' : 'Nuevo movimiento';
+  form.fecha.value = m ? m.fecha : new Date().toISOString().slice(0, 10);
+  form.tipo.value = m ? m.tipo : 'ingreso';
+  form.evento.value = m ? m.evento : '';
+  form.monto.value = m ? m.monto : '';
+  form.estado.value = m ? m.estado : 'ok';
+  form.concepto.value = m ? m.concepto : '';
+  form.miembro.innerHTML = libro.config.miembros.map(n => `<option>${esc(n)}</option>`).join('');
+  if (m && m.miembro) form.miembro.value = m.miembro;
+  $('#mov-file').value = '';
+  $('#mov-err').classList.add('hidden');
+  tipoCambio(); mostrarImagen();
+  dlg.showModal();
+}
+function tipoCambio() {
+  const d = form.tipo.value === 'distribucion';
+  $('#mov-evento-wrap').classList.toggle('hidden', d);
+  $('#mov-miembro-wrap').classList.toggle('hidden', !d);
+}
+function mostrarImagen() {
+  const w = $('#mov-img-wrap');
+  if (!imagenActual) { w.classList.add('hidden'); return; }
+  $('#mov-img').src = '/api/imagen/' + imagenActual.id + '?mime=' + encodeURIComponent(imagenActual.mime) + '&t=' + TOKEN;
+  w.classList.remove('hidden');
+}
+form.tipo.addEventListener('change', tipoCambio);
+$('#mov-file').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    imagenActual = await api('POST', '/api/imagen', f, { 'Content-Type': f.type, 'x-nombre': encodeURIComponent(f.name) });
+    mostrarImagen();
+  } catch (ex) { $('#mov-err').textContent = ex.message; $('#mov-err').classList.remove('hidden'); }
+});
+$('#mov-img-del').addEventListener('click', () => { imagenActual = null; $('#mov-file').value = ''; mostrarImagen(); });
+$('#mov-cancel').addEventListener('click', () => dlg.close('cancel'));
+form.addEventListener('submit', e => {
+  const m = {
+    id: editando || Ledger.nuevoId(),
+    fecha: form.fecha.value,
+    evento: form.tipo.value === 'distribucion' ? '' : form.evento.value.trim(),
+    tipo: form.tipo.value,
+    monto: Number(form.monto.value),
+    concepto: form.concepto.value.trim(),
+    miembro: form.tipo.value === 'distribucion' ? form.miembro.value : null,
+    estado: form.estado.value,
+    imagen: imagenActual,
+  };
+  const prueba = { ...libro, movimientos: [m] };
+  const errs = Ledger.validar(prueba);
+  if (errs.length) { e.preventDefault(); $('#mov-err').textContent = errs.join('\n'); $('#mov-err').classList.remove('hidden'); return; }
+  const i = libro.movimientos.findIndex(x => x.id === m.id);
+  if (i >= 0) libro.movimientos[i] = m; else libro.movimientos.push(m);
+  marcar(); render();
+});
+$('#btn-nuevo').addEventListener('click', () => abrirMov(null));
+$('#mov-body').addEventListener('click', e => {
+  const ed = e.target.closest('[data-edit]'), del = e.target.closest('[data-del]');
+  if (ed) abrirMov(libro.movimientos.find(m => m.id === ed.dataset.edit));
+  if (del) {
+    const m = libro.movimientos.find(x => x.id === del.dataset.del);
+    if (confirm('¿Borrar "' + (m.evento || m.miembro) + ' ' + Ledger.fmtSigned(m) + '"?')) {
+      libro.movimientos = libro.movimientos.filter(x => x.id !== m.id); marcar(); render();
+    }
+  }
+});
+
+/* ---------- quick distribution ---------- */
+const ddlg = $('#dlg-dist'), dform = $('#dist-form');
+$('#btn-dist').addEventListener('click', () => {
+  if (!libro.config.miembros.length) return alert('Agregá miembros primero.');
+  const r = Ledger.resumen(libro);
+  dform.fecha.value = new Date().toISOString().slice(0, 10);
+  dform.monto.value = r.porMiembro || '';
+  ddlg.showModal();
+});
+$('#dist-cancel').addEventListener('click', () => ddlg.close('cancel'));
+dform.addEventListener('submit', () => {
+  for (const n of libro.config.miembros) {
+    libro.movimientos.push({ id: Ledger.nuevoId(), fecha: dform.fecha.value, evento: '', tipo: 'distribucion',
+      monto: Number(dform.monto.value), concepto: dform.concepto.value.trim(), miembro: n, estado: 'ok', imagen: null });
+  }
+  marcar(); render();
+});
+
+/* ---------- password ---------- */
+const pdlg = $('#dlg-pass'), pform = $('#pass-form');
+$('#btn-pass').addEventListener('click', () => { pform.reset(); $('#pass-err').classList.add('hidden'); pdlg.showModal(); });
+$('#pass-cancel').addEventListener('click', () => pdlg.close('cancel'));
+pform.addEventListener('submit', e => {
+  if (pform.p1.value !== pform.p2.value) { e.preventDefault(); $('#pass-err').textContent = 'No coinciden'; $('#pass-err').classList.remove('hidden'); return; }
+  nuevaContrasena = pform.p1.value; marcar(); render();
+  $('#btn-pass').textContent = 'Contraseña nueva lista ✓';
+});
+
+/* ---------- import / export ---------- */
+$('#btn-export').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(libro, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'respaldo-' + new Date().toISOString().slice(0, 10) + '.json'; a.click();
+  URL.revokeObjectURL(a.href);
+});
+$('#btn-import').addEventListener('click', () => $('#import-file').click());
+$('#import-file').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return; e.target.value = '';
+  try {
+    const nuevo = JSON.parse(await f.text());
+    const errs = Ledger.validar(nuevo);
+    if (errs.length) throw new Error('El archivo tiene errores:\n' + errs.join('\n'));
+    if (nuevo.movimientos.some(m => m.imagen)) throw new Error('El respaldo referencia imágenes que este archivo no incluye. Quitá las imágenes del JSON o volvé a adjuntarlas después.');
+    if (!confirm('Esto REEMPLAZA el libro actual (' + libro.movimientos.length + ' movimientos) por el importado (' + nuevo.movimientos.length + '). ¿Continuar?')) return;
+    libro = nuevo; marcar(); render();
+  } catch (ex) { alert(ex.message); }
+});
+
+/* ---------- save ---------- */
+$('#btn-save').addEventListener('click', async () => {
+  const btn = $('#btn-save'), err = $('#save-err'), lg = $('#save-log');
+  err.classList.add('hidden'); lg.classList.add('hidden');
+  const errs = Ledger.validar(libro);
+  if (errs.length) { err.textContent = errs.join('\n'); err.classList.remove('hidden'); return; }
+  btn.disabled = true; btn.textContent = 'Publicando…';
+  try {
+    const r = await api('POST', '/api/guardar', { libro, nuevaContrasena });
+    lg.textContent = r.log.join('\n'); lg.classList.remove('hidden');
+    dirty = false; nuevaContrasena = null; $('#btn-pass').textContent = 'Cambiar contraseña'; render();
+  } catch (ex) {
+    err.textContent = ex.message + (ex.errores ? '\n' + ex.errores.join('\n') : ''); err.classList.remove('hidden');
+  } finally { btn.disabled = false; btn.textContent = 'Guardar y publicar'; }
+});
+window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+</script>
+</body>
+</html>
