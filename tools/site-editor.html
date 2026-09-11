@@ -80,9 +80,9 @@
 
   <section id="tab-galeria" class="hidden">
     <h1>Galería</h1>
-    <p class="sub">Las fotos se achican a 1600px y se convierten a WebP en este navegador antes de subirse. Arrastrá fotos acá o usá el botón. El orden es el de la página.</p>
+    <p class="sub">Las fotos se achican a 1600px y se convierten a WebP en este navegador antes de subirse (HEIC de iPhone incluido). Arrastrá fotos acá o usá el botón. El orden es el de la página.</p>
     <div class="toolbar">
-      <label class="btn-file">+ Fotos<input type="file" id="g-file" multiple accept="image/*"></label>
+      <label class="btn-file">+ Fotos<input type="file" id="g-file" multiple accept="image/*,.heic,.heif"></label>
       <span class="sub" id="g-progress"></span>
       <span class="spacer"></span>
       <span class="dirty hidden" id="g-dirty">● cambios sin publicar</span>
@@ -358,11 +358,42 @@ $('#g-grid').addEventListener('click', e => {
   marcarGaleria(); renderGaleria();
 });
 
+/* HEIC/HEIF (iPhone default) is not decodable by browsers; libheif compiled to
+ * WebAssembly (vendored in tools/vendor/) decodes it to RGBA on a canvas first. */
+const esHeic = f => /^image\/hei[cf]$/.test(f.type) || /\.hei[cf]$/i.test(f.name);
+let heifLib = null;
+function cargarHeif() {
+  if (!heifLib) heifLib = new Promise((ok, no) => {
+    const sc = document.createElement('script');
+    sc.src = '/vendor/libheif-bundle.js?t=' + TOKEN;
+    sc.onload = async () => { try { ok(typeof libheif === 'function' ? await libheif() : await libheif); } catch (e) { no(e); } };
+    sc.onerror = () => no(new Error('No se pudo cargar el decodificador HEIC'));
+    document.head.appendChild(sc);
+  });
+  return heifLib;
+}
+async function desdeHeic(file) {
+  const lib = await cargarHeif();
+  const imgs = new lib.HeifDecoder().decode(new Uint8Array(await file.arrayBuffer()));
+  if (!imgs.length) throw new Error('el HEIC no contiene imágenes');
+  const im = imgs[0]; // burst/live photos carry several frames; keep the first
+  const c = document.createElement('canvas');
+  c.width = im.get_width(); c.height = im.get_height();
+  const ctx = c.getContext('2d');
+  const data = ctx.createImageData(c.width, c.height);
+  await new Promise((ok, no) => im.display(data, d => d ? ok() : no(new Error('libheif no pudo decodificar'))));
+  ctx.putImageData(data, 0, 0);
+  imgs.forEach(i => i.free && i.free());
+  return c;
+}
+
 /* Resize + convert in the browser so the repo only ever gets small WebP files. */
 async function aWebp(file, max = 1600, calidad = 0.85) {
   let bmp;
-  try { bmp = await createImageBitmap(file, { imageOrientation: 'from-image' }); }
-  catch (_) { throw new Error(file.name + ': este navegador no puede leer ese formato (¿HEIC? exportalo como JPEG)'); }
+  try {
+    const src = esHeic(file) ? await desdeHeic(file) : file;
+    bmp = await createImageBitmap(src, { imageOrientation: 'from-image' });
+  } catch (e) { throw new Error(file.name + ': no se pudo leer la imagen (' + (e && e.message || 'formato no soportado') + ')'); }
   const k = Math.min(1, max / Math.max(bmp.width, bmp.height));
   const c = document.createElement('canvas');
   c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);

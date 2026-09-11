@@ -259,6 +259,11 @@ async function handle(req, res) {
     const html = fs.readFileSync(EDITOR_HTML, 'utf8').replace('__TOKEN__', TOKEN);
     return send(res, 200, html, 'text/html; charset=utf-8');
   }
+  if (req.method === 'GET' && p.startsWith('/vendor/')) {
+    const file = path.join(__dirname, 'vendor', path.basename(p));
+    if (!fs.existsSync(file)) throw Object.assign(new Error('No existe'), { status: 404 });
+    return send(res, 200, fs.readFileSync(file), 'text/javascript');
+  }
   if (req.method === 'GET' && p === '/model.js') {
     return send(res, 200, fs.readFileSync(path.join(ROOT, 'assets', 'model.js')), 'text/javascript');
   }
