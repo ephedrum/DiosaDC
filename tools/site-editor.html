@@ -48,13 +48,42 @@
   .err { background:#3a1515; color:#ffb4b4; padding:10px 12px; border-radius:6px; margin:10px 0; white-space:pre-wrap; font-size:13px; }
   .log { background:#0d0d0d; padding:12px 14px; border-radius:6px; font:13px/1.6 ui-monospace, monospace; white-space:pre-wrap; margin-top:12px; }
   .thumb { max-height:120px; max-width:100%; border-radius:6px; display:block; margin-top:6px; }
-  #gate { max-width:420px; margin:80px auto; }
+  #gate { max-width:420px; margin:60px auto; }
+  .tabs { display:flex; gap:4px; border-bottom:1px solid var(--line); margin-bottom:8px; }
+  .tabs button { background:transparent; color:var(--muted); border-radius:6px 6px 0 0; padding:10px 16px; font-weight:600; }
+  .tabs button.on { color:var(--text); background:var(--panel); }
+  .sh td input, .sh td select { padding:6px 8px; font-size:14px; }
+  .sh td { padding:6px 4px; }
+  .sh .pick { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
+  .sh td { position:relative; }
+  .sh .mv { padding:2px 7px; }
   .hidden { display:none !important; }
   @media (max-width:640px) { .row { grid-template-columns:1fr; } th.opt, td.opt { display:none; } }
 </style>
 </head>
 <body>
 <main>
+  <nav class="tabs"><button class="on" data-tab="shows">Shows</button><button data-tab="caja">Caja</button></nav>
+
+  <section id="tab-shows">
+    <h1>Shows</h1>
+    <p class="sub">Aparecen en la página pública en este mismo orden. Sin contraseña: los shows son públicos.</p>
+    <div class="toolbar">
+      <button class="primary" id="sh-add">+ Show</button>
+      <span class="spacer"></span>
+      <span class="dirty hidden" id="sh-dirty">● cambios sin publicar</span>
+      <button class="primary" id="sh-save">Guardar y publicar</button>
+    </div>
+    <div id="sh-err" class="err hidden"></div>
+    <div id="sh-log" class="log hidden"></div>
+    <table class="sh">
+      <thead><tr><th></th><th>Fecha</th><th>Día</th><th>Lugar</th><th>Dirección · hora · precio</th><th>Estado</th><th>Link</th><th></th></tr></thead>
+      <tbody id="sh-body"></tbody>
+    </table>
+    <p class="sub" style="margin-top:10px">📅 elige un día y rellena Fecha y Día. Estado <b>upcoming</b> muestra la etiqueta roja; <b>ended</b> o vacío no. Link: <code>#contact</code> o una URL completa.</p>
+  </section>
+
+  <section id="tab-caja" class="hidden">
   <section id="gate">
     <h1>Caja de la banda</h1>
     <p class="sub" id="gate-sub">Cargando…</p>
@@ -104,6 +133,7 @@
       <thead><tr><th>Fecha</th><th>Evento / miembro</th><th class="opt">Concepto</th><th>Monto</th><th></th></tr></thead>
       <tbody id="mov-body"></tbody>
     </table>
+  </section>
   </section>
 </main>
 
@@ -175,6 +205,90 @@ async function api(method, path, body, headers) {
   if (!r.ok) throw Object.assign(new Error(data.error || ('Error ' + r.status)), { errores: data.errores });
   return data;
 }
+
+/* ---------- tabs ---------- */
+document.querySelector('.tabs').addEventListener('click', e => {
+  const b = e.target.closest('[data-tab]'); if (!b) return;
+  document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b));
+  $('#tab-shows').classList.toggle('hidden', b.dataset.tab !== 'shows');
+  $('#tab-caja').classList.toggle('hidden', b.dataset.tab !== 'caja');
+});
+
+/* ---------- shows ---------- */
+const SHOW_FIELDS = ['date', 'day', 'venue', 'city', 'status', 'link'];
+const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+let shows = [];
+let showsDirty = false;
+
+function marcarShows() { showsDirty = true; $('#sh-dirty').classList.remove('hidden'); }
+
+function renderShows() {
+  $('#sh-dirty').classList.toggle('hidden', !showsDirty);
+  $('#sh-body').innerHTML = shows.map((s, i) => `<tr data-i="${i}">
+    <td><button class="small" data-pick title="Elegir fecha">📅</button><input type="date" class="pick" tabindex="-1"></td>
+    <td><input data-f="date" value="${esc(s.date)}" placeholder="SEP 05" style="width:80px"></td>
+    <td><input data-f="day" value="${esc(s.day)}" placeholder="Saturday" style="width:110px"></td>
+    <td><input data-f="venue" value="${esc(s.venue)}" placeholder="Lugar"></td>
+    <td><input data-f="city" value="${esc(s.city)}" placeholder="Dirección · 9PM · $10"></td>
+    <td><select data-f="status"><option value="upcoming"${s.status === 'upcoming' ? ' selected' : ''}>upcoming</option><option value="ended"${s.status === 'ended' ? ' selected' : ''}>ended</option><option value=""${!s.status ? ' selected' : ''}>—</option></select></td>
+    <td><input data-f="link" value="${esc(s.link)}" placeholder="#contact" style="width:110px"></td>
+    <td class="acts"><button class="small mv" data-up title="Subir">↑</button><button class="small mv" data-down title="Bajar">↓</button> <button class="small" data-del>Borrar</button></td>
+  </tr>`).join('');
+}
+
+$('#sh-body').addEventListener('input', e => {
+  const f = e.target.dataset.f; if (!f) return;
+  shows[+e.target.closest('tr').dataset.i][f] = e.target.value;
+  marcarShows();
+});
+$('#sh-body').addEventListener('change', e => {
+  if (!e.target.classList.contains('pick') || !e.target.value) return;
+  const [y, m, d] = e.target.value.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  const tr = e.target.closest('tr'), i = +tr.dataset.i;
+  shows[i].date = MONTHS[m - 1] + ' ' + String(d).padStart(2, '0');
+  shows[i].day = DAYS[dt.getDay()];
+  tr.querySelector('[data-f="date"]').value = shows[i].date;
+  tr.querySelector('[data-f="day"]').value = shows[i].day;
+  marcarShows();
+});
+$('#sh-body').addEventListener('click', e => {
+  const tr = e.target.closest('tr'); if (!tr) return;
+  const i = +tr.dataset.i;
+  if (e.target.matches('[data-pick]')) {
+    const pk = tr.querySelector('.pick');
+    try { pk.showPicker(); } catch (_) { pk.click(); }
+    return;
+  }
+  if (e.target.matches('[data-del]')) {
+    if (!confirm('¿Borrar "' + (shows[i].venue || 'show') + '"?')) return;
+    shows.splice(i, 1);
+  } else if (e.target.matches('[data-up]') && i > 0) {
+    [shows[i - 1], shows[i]] = [shows[i], shows[i - 1]];
+  } else if (e.target.matches('[data-down]') && i < shows.length - 1) {
+    [shows[i + 1], shows[i]] = [shows[i], shows[i + 1]];
+  } else return;
+  marcarShows(); renderShows();
+});
+$('#sh-add').addEventListener('click', () => {
+  shows.push({ date: '', day: '', venue: '', city: '', status: 'upcoming', link: '#contact' });
+  marcarShows(); renderShows();
+  const last = $('#sh-body tr:last-child [data-f="venue"]'); if (last) last.focus();
+});
+$('#sh-save').addEventListener('click', async () => {
+  const btn = $('#sh-save'), err = $('#sh-err'), lg = $('#sh-log');
+  err.classList.add('hidden'); lg.classList.add('hidden');
+  btn.disabled = true; btn.textContent = 'Publicando…';
+  try {
+    const r = await api('POST', '/api/shows', { shows });
+    lg.textContent = r.log.join('\n'); lg.classList.remove('hidden');
+    showsDirty = false; renderShows();
+  } catch (ex) {
+    err.textContent = ex.message + (ex.errores ? '\n' + ex.errores.join('\n') : ''); err.classList.remove('hidden');
+  } finally { btn.disabled = false; btn.textContent = 'Guardar y publicar'; }
+});
+(async () => { ({ shows } = await api('GET', '/api/shows')); renderShows(); })();
 
 /* ---------- gate ---------- */
 let modoCrear = false;
@@ -417,7 +531,7 @@ $('#btn-save').addEventListener('click', async () => {
     err.textContent = ex.message + (ex.errores ? '\n' + ex.errores.join('\n') : ''); err.classList.remove('hidden');
   } finally { btn.disabled = false; btn.textContent = 'Guardar y publicar'; }
 });
-window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+window.addEventListener('beforeunload', e => { if (dirty || showsDirty) { e.preventDefault(); e.returnValue = ''; } });
 </script>
 </body>
 </html>

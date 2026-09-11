@@ -20,6 +20,7 @@ const Ledger = require('../assets/model.js');
 const ROOT = path.resolve(__dirname, '..');
 const DATA_FILE = path.join(ROOT, 'assets', 'site.bin');
 const IMG_DIR = path.join(ROOT, 'assets', 'img');
+const SHOWS_FILE = path.join(ROOT, 'shows.csv');
 const EDITOR_HTML = path.join(__dirname, 'site-editor.html');
 const PORT = 4373;
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
@@ -52,9 +53,9 @@ function pull(lines) {
   }
 }
 
-function publish(lines) {
-  git('add', '-A', '--', 'assets');
-  try { git('diff', '--cached', '--quiet', '--', 'assets'); lines.push('Sin cambios que publicar'); return; }
+function publish(lines, paths) {
+  git('add', '-A', '--', ...paths);
+  try { git('diff', '--cached', '--quiet', '--', ...paths); lines.push('Sin cambios que publicar'); return; }
   catch (_) { /* there are staged changes */ }
   git('commit', '-q', '-m', 'Update site');
   lines.push('Commit creado: ' + git('log', '-1', '--format=%h %s'));
@@ -133,6 +134,52 @@ async function saveLedger(libro, nuevaContrasena, lines) {
   if (pruned) lines.push('Imágenes sin usar eliminadas: ' + pruned);
 }
 
+/* ---------- shows.csv helpers ----------
+ * Must stay compatible with the parser in index.html: it toggles on every
+ * double quote and has no escape, so fields may never contain a quote. */
+
+const SHOW_FIELDS = ['date', 'day', 'venue', 'city', 'status', 'link'];
+const SHOW_STATUSES = ['upcoming', 'ended', ''];
+
+function parseShows(text) {
+  const [header, ...rows] = text.trim().split(/\r?\n/);
+  const cols = header.split(',').map(h => h.trim());
+  return rows.filter(r => r.trim()).map(row => {
+    const fields = [];
+    let cur = '', inQ = false;
+    for (const ch of row) {
+      if (ch === '"') inQ = !inQ;
+      else if (ch === ',' && !inQ) { fields.push(cur.trim()); cur = ''; }
+      else cur += ch;
+    }
+    fields.push(cur.trim());
+    const o = {};
+    SHOW_FIELDS.forEach(f => { const i = cols.indexOf(f); o[f] = i >= 0 ? (fields[i] || '') : ''; });
+    return o;
+  });
+}
+
+function serializeShows(shows) {
+  const cell = v => (v.includes(',') ? '"' + v + '"' : v);
+  return [SHOW_FIELDS.join(','), ...shows.map(s => SHOW_FIELDS.map(f => cell(String(s[f] || '').trim())).join(','))].join('\n') + '\n';
+}
+
+function validarShows(shows) {
+  const err = [];
+  if (!Array.isArray(shows)) return ['shows debe ser una lista'];
+  shows.forEach((s, i) => {
+    const at = 'Show #' + (i + 1) + (s && s.venue ? ' (' + s.venue + ')' : '') + ': ';
+    for (const f of SHOW_FIELDS) {
+      const v = String((s || {})[f] || '');
+      if (/["\r\n]/.test(v)) err.push(at + f + ' no puede contener comillas ni saltos de línea');
+    }
+    if (!String(s.date || '').trim()) err.push(at + 'falta la fecha');
+    if (!String(s.venue || '').trim()) err.push(at + 'falta el lugar');
+    if (!SHOW_STATUSES.includes(String(s.status || '').trim())) err.push(at + 'estado inválido "' + s.status + '" (upcoming, ended o vacío)');
+  });
+  return err;
+}
+
 /* ---------- http plumbing ---------- */
 
 function readBody(req, limit) {
@@ -172,6 +219,23 @@ async function handle(req, res) {
   // <img> tags cannot set headers, so image previews pass the token as ?t=
   if (req.headers['x-caja-token'] !== TOKEN && url.searchParams.get('t') !== TOKEN) {
     return send(res, 403, { error: 'Token inválido; recargá la página' });
+  }
+
+  if (req.method === 'GET' && p === '/api/shows') {
+    const text = fs.existsSync(SHOWS_FILE) ? fs.readFileSync(SHOWS_FILE, 'utf8') : SHOW_FIELDS.join(',') + '\n';
+    return send(res, 200, { shows: parseShows(text) });
+  }
+
+  if (req.method === 'POST' && p === '/api/shows') {
+    const { shows } = JSON.parse(await readBody(req, 1e6));
+    const errores = validarShows(shows);
+    if (errores.length) return send(res, 400, { error: 'Los shows tienen errores', errores });
+    const lines = [];
+    if (!NO_PULL) pull(lines);
+    writeAtomic(SHOWS_FILE, serializeShows(shows));
+    lines.push('shows.csv escrito: ' + shows.length + ' shows');
+    publish(lines, ['shows.csv']);
+    return send(res, 200, { ok: true, log: lines });
   }
 
   if (req.method === 'GET' && p === '/api/estado') {
@@ -230,7 +294,7 @@ async function handle(req, res) {
     const lines = [];
     if (!NO_PULL) pull(lines);
     await saveLedger(libro, nuevaContrasena || null, lines);
-    publish(lines);
+    publish(lines, ['assets']);
     return send(res, 200, { ok: true, log: lines, resumen: Ledger.resumen(libro) });
   }
 
