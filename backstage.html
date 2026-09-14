@@ -12,7 +12,7 @@
   :root {
     --black:#080808; --surface:#141414; --surface2:#1c1c1c; --rule:#242424;
     --muted:#7a7a7a; --light:#a5a19a; --bone:#c8c3b8; --white:#f0ede6;
-    --accent:#b8312f; --pos:#8db2ff; --pend:#e5b45c;
+    --accent:#b8312f; --pos:#8db2ff; --pend:#e5b45c; --dist:#e0803a;
   }
   *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
   html { color-scheme:dark; }
@@ -55,7 +55,12 @@
   /* cards */
   h2 { font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin:36px 0 12px; font-weight:500; }
   .card { background:var(--surface); border-radius:12px; padding:18px 20px; margin-bottom:12px; }
-  .card.dist { background:var(--surface2); }
+  /* Card fill follows the settled net: blue when the event made money, red when
+   * it lost, amber while everything in it is still pending, orange for payouts. */
+  .card.pos { background:color-mix(in srgb, var(--pos) 12%, var(--surface)); }
+  .card.neg { background:color-mix(in srgb, var(--accent) 16%, var(--surface)); }
+  .card.pend { background:color-mix(in srgb, var(--pend) 12%, var(--surface)); }
+  .card.dist { background:color-mix(in srgb, var(--dist) 13%, var(--surface)); }
   .card-head { display:flex; justify-content:space-between; align-items:baseline; gap:12px; }
   .card-head .t { font-size:18px; font-weight:600; }
   .card-head .d { font-size:13px; color:var(--muted); white-space:nowrap; }
@@ -199,8 +204,9 @@ function mostrar() {
       </div>`;
     }
     const netoCls = g.neto >= 0 ? 'pos' : 'neg';
+    const todoPendiente = g.movimientos.every(m => m.estado === 'pendiente');
     const pend = g.pendiente ? `<small>+ ${Ledger.fmtMonto(g.pendiente)} pendiente</small>` : '';
-    return `<div class="card">
+    return `<div class="card ${todoPendiente ? 'pend' : netoCls}">
       <div class="card-head"><div class="t">${esc(g.titulo)}</div><div class="d">${fecha}</div></div>
       <div class="card-net ${netoCls}">${g.neto < 0 ? '−' : ''}${Ledger.fmtMonto(Math.abs(g.neto))}${pend}</div>
       ${g.movimientos.map(m => `<div class="mov">
