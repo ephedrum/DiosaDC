@@ -77,6 +77,15 @@
   .dist-list span b { color:var(--muted); font-weight:400; margin-left:4px; }
   .foot { margin-top:40px; display:flex; justify-content:space-between; align-items:center; gap:12px; color:var(--muted); font-size:12px; flex-wrap:wrap; }
 
+  /* previous (archived) movements */
+  .previos { margin-top:22px; }
+  .previos summary { cursor:pointer; list-style:none; padding:10px 0; font-size:13px; color:var(--light); }
+  .previos summary::-webkit-details-marker { display:none; }
+  .previos summary::before { content:'▸ '; color:var(--muted); }
+  .previos[open] summary::before { content:'▾ '; }
+  .previos summary .muted { color:var(--muted); }
+  .previos > div { margin-top:8px; }
+
   /* lightbox */
   #box { position:fixed; inset:0; background:rgba(0,0,0,.92); display:flex; align-items:center; justify-content:center; padding:20px; z-index:10; }
   #box img { max-width:100%; max-height:92vh; border-radius:8px; }
@@ -114,6 +123,11 @@
 
     <h2>Movimientos</h2>
     <div id="cards"></div>
+
+    <details id="previos-wrap" class="previos hidden">
+      <summary id="previos-summary"></summary>
+      <div id="previos"></div>
+    </details>
 
     <div class="foot">
       <span>Los datos viajan encriptados; la contraseña nunca sale de tu dispositivo.</span>
@@ -193,29 +207,43 @@ function mostrar() {
   anual = Ledger.porAnio(libro);
   mostrarAnio(Ledger.anioInicial(anual.anios));
 
-  $('#cards').innerHTML = Ledger.grupos(libro).map(g => {
-    const fecha = g.desde === g.hasta ? Ledger.fmtFecha(g.hasta) : Ledger.fmtFecha(g.desde) + ' – ' + Ledger.fmtFecha(g.hasta);
-    if (g.clase === 'distribucion') {
-      const total = g.movimientos.reduce((s, m) => s + m.monto, 0);
-      return `<div class="card dist">
-        <div class="card-head"><div class="t">${esc(g.titulo)}</div><div class="d">${fecha}</div></div>
-        <div class="card-net neg">−${Ledger.fmtMonto(total)}<small>${g.movimientos.length} miembros</small></div>
-        <div class="dist-list">${g.movimientos.map(m => `<span>${esc(m.miembro)}<b>${Ledger.fmtMonto(m.monto)}</b></span>`).join('')}</div>
-      </div>`;
-    }
-    const netoCls = g.neto >= 0 ? 'pos' : 'neg';
-    const todoPendiente = g.movimientos.every(m => m.estado === 'pendiente');
-    const pend = g.pendiente ? `<small>+ ${Ledger.fmtMonto(g.pendiente)} pendiente</small>` : '';
-    return `<div class="card ${todoPendiente ? 'pend' : netoCls}">
+  const grupos = Ledger.grupos(libro);
+  const { actuales, previos } = Ledger.separarPrevios(grupos);
+  $('#cards').innerHTML = actuales.map(cardHTML).join('');
+
+  const wrap = $('#previos-wrap');
+  if (previos.length) {
+    const nMov = previos.reduce((s, g) => s + g.movimientos.length, 0);
+    $('#previos-summary').innerHTML = `Ver ${nMov} movimiento${nMov === 1 ? '' : 's'} anteriores <span class="muted">· hasta ${Ledger.fmtFecha(previos[0].hasta)}</span>`;
+    $('#previos').innerHTML = previos.map(cardHTML).join('');
+    wrap.classList.remove('hidden');
+  } else {
+    wrap.classList.add('hidden');
+  }
+}
+
+function cardHTML(g) {
+  const fecha = g.desde === g.hasta ? Ledger.fmtFecha(g.hasta) : Ledger.fmtFecha(g.desde) + ' – ' + Ledger.fmtFecha(g.hasta);
+  if (g.clase === 'distribucion') {
+    const total = g.movimientos.reduce((s, m) => s + m.monto, 0);
+    return `<div class="card dist">
       <div class="card-head"><div class="t">${esc(g.titulo)}</div><div class="d">${fecha}</div></div>
-      <div class="card-net ${netoCls}">${g.neto < 0 ? '−' : ''}${Ledger.fmtMonto(Math.abs(g.neto))}${pend}</div>
-      ${g.movimientos.map(m => `<div class="mov">
-        <div class="c">${esc(m.concepto) || Ledger.TIPO_LABEL[m.tipo]}</div>
-        <div class="a ${m.estado === 'pendiente' ? 'pend' : m.tipo === 'ingreso' ? 'pos' : ''}">${Ledger.fmtSigned(m)}</div>
-        <div class="meta">${Ledger.fmtFecha(m.fecha)}${m.estado === 'pendiente' ? ' <span class="badge">Pendiente</span>' : ''}${m.imagen ? ` <button class="link" data-img="${m.imagen.id}" data-mime="${m.imagen.mime}">Ver comprobante</button>` : ''}</div>
-      </div>`).join('')}
+      <div class="card-net neg">−${Ledger.fmtMonto(total)}<small>${g.movimientos.length} miembros</small></div>
+      <div class="dist-list">${g.movimientos.map(m => `<span>${esc(m.miembro)}<b>${Ledger.fmtMonto(m.monto)}</b></span>`).join('')}</div>
     </div>`;
-  }).join('');
+  }
+  const netoCls = g.neto >= 0 ? 'pos' : 'neg';
+  const todoPendiente = g.movimientos.every(m => m.estado === 'pendiente');
+  const pend = g.pendiente ? `<small>+ ${Ledger.fmtMonto(g.pendiente)} pendiente</small>` : '';
+  return `<div class="card ${todoPendiente ? 'pend' : netoCls}">
+    <div class="card-head"><div class="t">${esc(g.titulo)}</div><div class="d">${fecha}</div></div>
+    <div class="card-net ${netoCls}">${g.neto < 0 ? '−' : ''}${Ledger.fmtMonto(Math.abs(g.neto))}${pend}</div>
+    ${g.movimientos.map(m => `<div class="mov">
+      <div class="c">${esc(m.concepto) || Ledger.TIPO_LABEL[m.tipo]}</div>
+      <div class="a ${m.estado === 'pendiente' ? 'pend' : m.tipo === 'ingreso' ? 'pos' : ''}">${Ledger.fmtSigned(m)}</div>
+      <div class="meta">${Ledger.fmtFecha(m.fecha)}${m.estado === 'pendiente' ? ' <span class="badge">Pendiente</span>' : ''}${m.imagen ? ` <button class="link" data-img="${m.imagen.id}" data-mime="${m.imagen.mime}">Ver comprobante</button>` : ''}</div>
+    </div>`).join('')}
+  </div>`;
 }
 let anual = null;
 function mostrarAnio(y) {
@@ -234,8 +262,9 @@ $('#years').addEventListener('click', e => { const b = e.target.closest('[data-y
 
 function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 
-/* Receipts are decrypted on demand and kept as blob URLs for the session. */
-$('#cards').addEventListener('click', async e => {
+/* Receipts are decrypted on demand and kept as blob URLs for the session.
+ * Delegated from main so it also covers cards inside the collapsed "previos" section. */
+$('main').addEventListener('click', async e => {
   const b = e.target.closest('[data-img]'); if (!b) return;
   const id = b.dataset.img;
   b.disabled = true;

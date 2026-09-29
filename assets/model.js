@@ -111,13 +111,33 @@
       g.neto += valor(m);
       if (m.tipo === 'ingreso') g.ingresos += m.monto; else g.gastos += m.monto;
     }
+    const roster = (libro.config.miembros || []).length;
     const out = [...map.values()];
     for (const g of out) {
       g.movimientos.sort((a, b) => a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : 0);
       for (const k of ['ingresos', 'gastos', 'neto', 'pendiente']) g[k] = round2(g[k]);
+      /* A distribution only counts as emptying the fund down to the reserve
+       * when every member was paid that day — a payout to just one member
+       * (e.g. reimbursing a specific cost) doesn't reset anything. */
+      if (g.clase === 'distribucion') {
+        const distintos = new Set(g.movimientos.map(m => m.miembro)).size;
+        g.completa = roster > 0 && distintos === roster && g.movimientos.length === roster;
+      }
     }
     out.sort((a, b) => a.hasta < b.hasta ? 1 : a.hasta > b.hasta ? -1 : 0);
     return out;
+  }
+
+  /* Splits groups (as returned by grupos(), newest first) into the current
+   * period and an archived "previous" bucket, cut at the most recent full
+   * (all-member) distribution. Everything from that distribution backwards
+   * is assumed settled, since a full distribution implies the reserve was
+   * refilled first. Returns { actuales, previos }; previos is empty if no
+   * full distribution exists yet. */
+  function separarPrevios(grupos) {
+    const i = grupos.findIndex(g => g.clase === 'distribucion' && g.completa);
+    if (i === -1) return { actuales: grupos, previos: [] };
+    return { actuales: grupos.slice(0, i), previos: grupos.slice(i) };
   }
 
   function fechaValida(s) {
@@ -187,7 +207,7 @@
 
   return {
     VERSION, TIPOS, ESTADOS, TIPO_LABEL, IMAGE_MIMES,
-    nuevoLibro, nuevoId, valor, resumen, porAnio, anioInicial, grupos, validar, fechaValida,
+    nuevoLibro, nuevoId, valor, resumen, porAnio, anioInicial, grupos, separarPrevios, validar, fechaValida,
     fmtMonto, fmtSigned, fmtFecha,
   };
 });
