@@ -129,15 +129,16 @@
   }
 
   /* Splits groups (as returned by grupos(), newest first) into the current
-   * period and an archived "previous" bucket, cut at the most recent full
-   * (all-member) distribution. Everything from that distribution backwards
-   * is assumed settled, since a full distribution implies the reserve was
-   * refilled first. Returns { actuales, previos }; previos is empty if no
-   * full distribution exists yet. */
+   * period and an archived "previous" bucket, cut right after the most
+   * recent full (all-member) distribution — that distribution stays visible
+   * in "current" as the record of the reset, while everything strictly
+   * older than it (already settled, since a full distribution implies the
+   * reserve was refilled first) is archived. Returns { actuales, previos };
+   * previos is empty if no full distribution exists yet. */
   function separarPrevios(grupos) {
     const i = grupos.findIndex(g => g.clase === 'distribucion' && g.completa);
     if (i === -1) return { actuales: grupos, previos: [] };
-    return { actuales: grupos.slice(0, i), previos: grupos.slice(i) };
+    return { actuales: grupos.slice(0, i + 1), previos: grupos.slice(i + 1) };
   }
 
   function fechaValida(s) {
