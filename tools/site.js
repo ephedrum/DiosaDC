@@ -104,7 +104,8 @@ function listImageIds() {
 
 async function saveLedger(libro, nuevaContrasena, lines) {
   let { key, salt } = session;
-  const referenced = new Set(libro.movimientos.filter(m => m.imagen).map(m => m.imagen.id));
+  const referenced = new Set();
+  for (const m of libro.movimientos) for (const im of (m.imagenes || [])) referenced.add(im.id);
 
   if (nuevaContrasena) {
     const newSalt = DCrypt.randomBytes(DCrypt.SALT_LEN);
@@ -337,7 +338,7 @@ async function handle(req, res) {
     const key = await DCrypt.deriveKey(contrasena || '', salt);
     const libro = await DCrypt.decryptJSON(key, file); // throws on wrong password
     session = { key, salt };
-    return send(res, 200, { libro });
+    return send(res, 200, { libro: Ledger.normalizar(libro) });
   }
 
   if (req.method === 'POST' && p === '/api/crear') {
@@ -372,11 +373,14 @@ async function handle(req, res) {
   if (req.method === 'POST' && p === '/api/guardar') {
     needSession();
     const { libro, nuevaContrasena } = JSON.parse(await readBody(req, 20e6));
+    Ledger.normalizar(libro);
     const errores = Ledger.validar(libro);
     if (errores.length) return send(res, 400, { error: 'El libro tiene errores', errores });
     if (nuevaContrasena != null && nuevaContrasena.length < 8) return send(res, 400, { error: 'La contraseña nueva debe tener al menos 8 caracteres' });
     for (const m of libro.movimientos) {
-      if (m.imagen && !fs.existsSync(imgPath(m.imagen.id))) return send(res, 400, { error: 'Falta el archivo de la imagen de: ' + (m.evento || m.concepto) });
+      for (const im of (m.imagenes || [])) {
+        if (!fs.existsSync(imgPath(im.id))) return send(res, 400, { error: 'Falta el archivo de un comprobante de: ' + (m.evento || m.concepto) });
+      }
     }
     const lines = [];
     if (!NO_PULL) pull(lines);

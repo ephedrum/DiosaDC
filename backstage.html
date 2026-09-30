@@ -40,6 +40,9 @@
   .hero .status { margin-top:10px; font-size:14px; color:var(--light); }
   .hero .status b { color:var(--pos); font-weight:600; }
   .hero .status b.warn { color:var(--pend); }
+  .bar { height:8px; background:var(--surface2); border-radius:4px; margin-top:14px; overflow:hidden; }
+  .bar-fill { height:100%; background:var(--pos); border-radius:4px; transition:width .3s; }
+  .search-wrap { margin:-6px 0 14px; }
   .tiles { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-top:10px; }
   .tile { background:var(--surface); border-radius:12px; padding:16px 18px; }
   .tile .k { font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
@@ -73,9 +76,10 @@
   .mov .a { font-variant-numeric:tabular-nums; font-weight:600; white-space:nowrap; text-align:right; }
   .mov .a.pos { color:var(--pos); } .mov .a.pend { color:var(--pend); }
   .badge { font-size:11px; padding:1px 8px; border-radius:10px; background:#3a2c12; color:var(--pend); letter-spacing:.04em; }
-  .dist-list { display:flex; flex-wrap:wrap; gap:8px 18px; margin-top:12px; color:var(--bone); font-size:15px; }
-  .dist-list span b { color:var(--muted); font-weight:400; margin-left:4px; }
-  .dist-list .recibo { padding:0; margin-left:4px; font-size:13px; text-decoration:none; vertical-align:middle; }
+  .dist-list { display:flex; flex-wrap:wrap; gap:14px 24px; margin-top:12px; }
+  .dist-item { color:var(--bone); font-size:15px; }
+  .dist-item b { color:var(--muted); font-weight:400; margin-left:4px; }
+  .dist-item .link { display:block; margin-top:2px; padding:0; font-size:12px; }
   .foot { margin-top:40px; display:flex; justify-content:space-between; align-items:center; gap:12px; color:var(--muted); font-size:12px; flex-wrap:wrap; }
 
   /* previous (archived) movements */
@@ -114,6 +118,7 @@
       <div class="k">Fondo actual</div>
       <div class="v" id="fondo"></div>
       <div class="status" id="status"></div>
+      <div class="bar"><div class="bar-fill" id="bar-fill"></div></div>
     </div>
     <div class="tiles" id="tiles"></div>
 
@@ -123,6 +128,7 @@
     </section>
 
     <h2>Movimientos</h2>
+    <div class="search-wrap"><input type="search" id="buscar" placeholder="Buscar por miembro, evento o fecha…"></div>
     <div id="cards"></div>
 
     <details id="previos-wrap" class="previos hidden">
@@ -191,14 +197,19 @@ async function init() {
 }
 function mostrarError(msg) { const el = $('#gate-err'); el.textContent = msg; el.classList.remove('hidden'); }
 
+let actuales = [], previos = [];
+
 function mostrar() {
   $('#gate').classList.add('hidden'); $('#app').classList.remove('hidden');
+  Ledger.normalizar(libro);
   const r = Ledger.resumen(libro);
   $('#updated').textContent = libro.actualizado ? 'Actualizado el ' + Ledger.fmtFecha(libro.actualizado.slice(0, 10)) : '';
   $('#fondo').textContent = Ledger.fmtMonto(r.fondo);
   $('#status').innerHTML = r.completo
     ? 'Reserva de ' + Ledger.fmtMonto(r.reserva) + ': <b>COMPLETA</b>'
     : 'Reserva de ' + Ledger.fmtMonto(r.reserva) + ': <b class="warn">faltan ' + Ledger.fmtMonto(r.faltante) + '</b>';
+  const pct = r.reserva > 0 ? Math.min(100, Math.max(0, r.fondo / r.reserva * 100)) : 0;
+  $('#bar-fill').style.width = pct + '%';
   const tile = (k, v, cls) => `<div class="tile ${cls || ''}"><div class="k">${k}</div><div class="v">${v}</div></div>`;
   $('#tiles').innerHTML =
     tile('Para distribuir', Ledger.fmtMonto(r.disponible)) +
@@ -208,19 +219,44 @@ function mostrar() {
   anual = Ledger.porAnio(libro);
   mostrarAnio(Ledger.anioInicial(anual.anios));
 
-  const grupos = Ledger.grupos(libro);
-  const { actuales, previos } = Ledger.separarPrevios(grupos);
-  $('#cards').innerHTML = actuales.map(cardHTML).join('');
+  ({ actuales, previos } = Ledger.separarPrevios(Ledger.grupos(libro)));
+  renderCards();
+}
+
+/* True when a group has a movimiento (or a title/date) matching the search query. */
+function coincide(g, q) {
+  if (g.titulo.toLowerCase().includes(q)) return true;
+  if (Ledger.fmtFecha(g.desde).toLowerCase().includes(q) || Ledger.fmtFecha(g.hasta).toLowerCase().includes(q)) return true;
+  return g.movimientos.some(m =>
+    (m.miembro || '').toLowerCase().includes(q) ||
+    (m.concepto || '').toLowerCase().includes(q) ||
+    (m.evento || '').toLowerCase().includes(q) ||
+    Ledger.fmtFecha(m.fecha).toLowerCase().includes(q));
+}
+
+function renderCards() {
+  const q = $('#buscar').value.trim().toLowerCase();
+  const filtA = q ? actuales.filter(g => coincide(g, q)) : actuales;
+  const filtP = q ? previos.filter(g => coincide(g, q)) : previos;
+  $('#cards').innerHTML = filtA.map(cardHTML).join('') || (q ? '<p class="sub">Sin resultados.</p>' : '');
 
   const wrap = $('#previos-wrap');
-  if (previos.length) {
-    const nMov = previos.reduce((s, g) => s + g.movimientos.length, 0);
-    $('#previos-summary').innerHTML = `Ver ${nMov} movimiento${nMov === 1 ? '' : 's'} anteriores <span class="muted">· hasta ${Ledger.fmtFecha(previos[0].hasta)}</span>`;
-    $('#previos').innerHTML = previos.map(cardHTML).join('');
+  if (filtP.length) {
+    const nMov = filtP.reduce((s, g) => s + g.movimientos.length, 0);
+    $('#previos-summary').innerHTML = `Ver ${nMov} movimiento${nMov === 1 ? '' : 's'} anteriores <span class="muted">· hasta ${Ledger.fmtFecha(filtP[0].hasta)}</span>`;
+    $('#previos').innerHTML = filtP.map(cardHTML).join('');
     wrap.classList.remove('hidden');
+    if (q) wrap.open = true;
   } else {
     wrap.classList.add('hidden');
   }
+}
+$('#buscar').addEventListener('input', renderCards);
+
+/* One "Ver comprobante" link per attached file; numbered when there's more than one. */
+function recibosHTML(m) {
+  const imgs = m.imagenes || [];
+  return imgs.map((im, i) => `<button class="link" data-img="${im.id}" data-mime="${im.mime}">Ver comprobante${imgs.length > 1 ? ' ' + (i + 1) : ''}</button>`).join('');
 }
 
 function cardHTML(g) {
@@ -230,7 +266,7 @@ function cardHTML(g) {
     return `<div class="card dist">
       <div class="card-head"><div class="t">${esc(g.titulo)}</div><div class="d">${fecha}</div></div>
       <div class="card-net neg">−${Ledger.fmtMonto(total)}<small>${g.movimientos.length} miembros</small></div>
-      <div class="dist-list">${g.movimientos.map(m => `<span>${esc(m.miembro)}<b>${Ledger.fmtMonto(m.monto)}</b>${m.imagen ? ` <button class="link recibo" data-img="${m.imagen.id}" data-mime="${m.imagen.mime}" title="Ver comprobante">📎</button>` : ''}</span>`).join('')}</div>
+      <div class="dist-list">${g.movimientos.map(m => `<div class="dist-item"><span>${esc(m.miembro)}<b>${Ledger.fmtMonto(m.monto)}</b></span>${recibosHTML(m)}</div>`).join('')}</div>
     </div>`;
   }
   const netoCls = g.neto >= 0 ? 'pos' : 'neg';
@@ -242,7 +278,7 @@ function cardHTML(g) {
     ${g.movimientos.map(m => `<div class="mov">
       <div class="c">${esc(m.concepto) || Ledger.TIPO_LABEL[m.tipo]}</div>
       <div class="a ${m.estado === 'pendiente' ? 'pend' : m.tipo === 'ingreso' ? 'pos' : ''}">${Ledger.fmtSigned(m)}</div>
-      <div class="meta">${Ledger.fmtFecha(m.fecha)}${m.estado === 'pendiente' ? ' <span class="badge">Pendiente</span>' : ''}${m.imagen ? ` <button class="link" data-img="${m.imagen.id}" data-mime="${m.imagen.mime}">Ver comprobante</button>` : ''}</div>
+      <div class="meta">${Ledger.fmtFecha(m.fecha)}${m.estado === 'pendiente' ? ' <span class="badge">Pendiente</span>' : ''} ${recibosHTML(m)}</div>
     </div>`).join('')}
   </div>`;
 }

@@ -48,6 +48,11 @@
   .err { background:#3a1515; color:#ffb4b4; padding:10px 12px; border-radius:6px; margin:10px 0; white-space:pre-wrap; font-size:13px; }
   .log { background:#0d0d0d; padding:12px 14px; border-radius:6px; font:13px/1.6 ui-monospace, monospace; white-space:pre-wrap; margin-top:12px; }
   .thumb { max-height:120px; max-width:100%; border-radius:6px; display:block; margin-top:6px; }
+  .img-list { display:flex; flex-direction:column; gap:8px; margin:6px 0; }
+  .img-row { display:flex; align-items:center; gap:10px; background:var(--panel2); border-radius:6px; padding:6px 10px; }
+  .img-row img { height:48px; width:48px; object-fit:cover; border-radius:4px; flex:none; background:#000; }
+  .img-row .name { flex:1; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .img-row button { padding:2px 8px; }
   #gate { max-width:420px; margin:60px auto; }
   .tabs { display:flex; gap:4px; border-bottom:1px solid var(--line); margin-bottom:8px; }
   .tabs button { background:transparent; color:var(--muted); border-radius:6px 6px 0 0; padding:10px 16px; font-weight:600; }
@@ -180,9 +185,9 @@
       <div><label>Estado</label><select name="estado"><option value="ok">Cobrado / pagado</option><option value="pendiente">Pendiente</option></select></div>
     </div>
     <label>Concepto</label><textarea name="concepto"></textarea>
-    <label>Comprobante (imagen, opcional)</label>
-    <input type="file" id="mov-file" accept="image/png,image/jpeg,image/webp,image/gif">
-    <div id="mov-img-wrap" class="hidden"><img class="thumb" id="mov-img"><button type="button" class="small" id="mov-img-del" style="margin-top:6px">Quitar imagen</button></div>
+    <label>Comprobantes (imágenes, opcional, hasta <span id="mov-img-max"></span>)</label>
+    <div id="mov-img-list" class="img-list"></div>
+    <input type="file" id="mov-file" accept="image/png,image/jpeg,image/webp,image/gif" multiple>
     <div id="mov-err" class="err hidden"></div>
     <div class="dlg-acts"><button type="button" id="mov-cancel">Cancelar</button><button class="primary" value="ok">Aceptar</button></div>
   </form>
@@ -507,7 +512,7 @@ function render() {
     const cls = m.estado === 'pendiente' ? 'pend' : (m.tipo === 'ingreso' ? 'pos' : 'neg');
     return `<tr>
       <td>${Ledger.fmtFecha(m.fecha)}</td>
-      <td>${who}<span class="badge">${Ledger.TIPO_LABEL[m.tipo]}</span>${m.estado === 'pendiente' ? '<span class="badge pend">Pendiente</span>' : ''}${m.imagen ? '<span class="badge" title="' + esc(m.imagen.nombre) + '">📎</span>' : ''}</td>
+      <td>${who}<span class="badge">${Ledger.TIPO_LABEL[m.tipo]}</span>${m.estado === 'pendiente' ? '<span class="badge pend">Pendiente</span>' : ''}${(m.imagenes || []).length ? '<span class="badge" title="' + m.imagenes.map(im => esc(im.nombre)).join(', ') + '">📎' + (m.imagenes.length > 1 ? ' ' + m.imagenes.length : '') + '</span>' : ''}</td>
       <td class="opt">${esc(m.concepto)}</td>
       <td class="num ${cls}">${Ledger.fmtSigned(m)}</td>
       <td class="acts"><button class="small" data-edit="${m.id}">Editar</button> <button class="small" data-del="${m.id}">Borrar</button></td>
@@ -552,11 +557,13 @@ $('#cfg-chips').addEventListener('click', e => {
 /* ---------- movement dialog ---------- */
 const dlg = $('#dlg-mov'), form = $('#mov-form');
 let editando = null; // id or null
-let imagenActual = null;
+let imagenesActuales = [];
+
+$('#mov-img-max').textContent = Ledger.MAX_IMAGENES;
 
 function abrirMov(m) {
   editando = m ? m.id : null;
-  imagenActual = m ? m.imagen : null;
+  imagenesActuales = m ? (m.imagenes || []).slice() : [];
   $('#mov-title').textContent = m ? 'Editar movimiento' : 'Nuevo movimiento';
   form.fecha.value = m ? m.fecha : new Date().toISOString().slice(0, 10);
   form.tipo.value = m ? m.tipo : 'ingreso';
@@ -568,7 +575,7 @@ function abrirMov(m) {
   if (m && m.miembro) form.miembro.value = m.miembro;
   $('#mov-file').value = '';
   $('#mov-err').classList.add('hidden');
-  tipoCambio(); mostrarImagen();
+  tipoCambio(); mostrarImagenes();
   dlg.showModal();
 }
 function tipoCambio() {
@@ -576,21 +583,34 @@ function tipoCambio() {
   $('#mov-evento-wrap').classList.toggle('hidden', d);
   $('#mov-miembro-wrap').classList.toggle('hidden', !d);
 }
-function mostrarImagen() {
-  const w = $('#mov-img-wrap');
-  if (!imagenActual) { w.classList.add('hidden'); return; }
-  $('#mov-img').src = '/api/imagen/' + imagenActual.id + '?mime=' + encodeURIComponent(imagenActual.mime) + '&t=' + TOKEN;
-  w.classList.remove('hidden');
+function mostrarImagenes() {
+  $('#mov-img-list').innerHTML = imagenesActuales.map((im, i) => `<div class="img-row" data-i="${i}">
+    <img src="/api/imagen/${im.id}?mime=${encodeURIComponent(im.mime)}&t=${TOKEN}">
+    <span class="name" title="${esc(im.nombre)}">${esc(im.nombre)}</span>
+    <button type="button" class="small" data-img-del>Quitar</button>
+  </div>`).join('');
+  $('#mov-file').disabled = imagenesActuales.length >= Ledger.MAX_IMAGENES;
 }
+$('#mov-img-list').addEventListener('click', e => {
+  const row = e.target.closest('[data-img-del]') && e.target.closest('.img-row'); if (!row) return;
+  imagenesActuales.splice(+row.dataset.i, 1);
+  mostrarImagenes();
+});
 form.tipo.addEventListener('change', tipoCambio);
 $('#mov-file').addEventListener('change', async e => {
-  const f = e.target.files[0]; if (!f) return;
-  try {
-    imagenActual = await api('POST', '/api/imagen', f, { 'Content-Type': f.type, 'x-nombre': encodeURIComponent(f.name) });
-    mostrarImagen();
-  } catch (ex) { $('#mov-err').textContent = ex.message; $('#mov-err').classList.remove('hidden'); }
+  const files = [...e.target.files];
+  const err = $('#mov-err'); err.classList.add('hidden');
+  const cupo = Ledger.MAX_IMAGENES - imagenesActuales.length;
+  const usar = files.slice(0, cupo);
+  if (files.length > cupo) { err.textContent = 'Máximo ' + Ledger.MAX_IMAGENES + ' comprobantes por movimiento; se ignoraron ' + (files.length - cupo) + '.'; err.classList.remove('hidden'); }
+  for (const f of usar) {
+    try {
+      imagenesActuales.push(await api('POST', '/api/imagen', f, { 'Content-Type': f.type, 'x-nombre': encodeURIComponent(f.name) }));
+    } catch (ex) { err.textContent = ex.message; err.classList.remove('hidden'); }
+  }
+  $('#mov-file').value = '';
+  mostrarImagenes();
 });
-$('#mov-img-del').addEventListener('click', () => { imagenActual = null; $('#mov-file').value = ''; mostrarImagen(); });
 $('#mov-cancel').addEventListener('click', () => dlg.close('cancel'));
 form.addEventListener('submit', e => {
   const m = {
@@ -602,7 +622,7 @@ form.addEventListener('submit', e => {
     concepto: form.concepto.value.trim(),
     miembro: form.tipo.value === 'distribucion' ? form.miembro.value : null,
     estado: form.estado.value,
-    imagen: imagenActual,
+    imagenes: imagenesActuales,
   };
   const prueba = { ...libro, movimientos: [m] };
   const errs = Ledger.validar(prueba);
@@ -636,7 +656,7 @@ $('#dist-cancel').addEventListener('click', () => ddlg.close('cancel'));
 dform.addEventListener('submit', () => {
   for (const n of libro.config.miembros) {
     libro.movimientos.push({ id: Ledger.nuevoId(), fecha: dform.fecha.value, evento: '', tipo: 'distribucion',
-      monto: Number(dform.monto.value), concepto: dform.concepto.value.trim(), miembro: n, estado: 'ok', imagen: null });
+      monto: Number(dform.monto.value), concepto: dform.concepto.value.trim(), miembro: n, estado: 'ok', imagenes: [] });
   }
   marcar(); render();
 });
@@ -663,9 +683,10 @@ $('#import-file').addEventListener('change', async e => {
   const f = e.target.files[0]; if (!f) return; e.target.value = '';
   try {
     const nuevo = JSON.parse(await f.text());
+    Ledger.normalizar(nuevo);
     const errs = Ledger.validar(nuevo);
     if (errs.length) throw new Error('El archivo tiene errores:\n' + errs.join('\n'));
-    if (nuevo.movimientos.some(m => m.imagen)) throw new Error('El respaldo referencia imágenes que este archivo no incluye. Quitá las imágenes del JSON o volvé a adjuntarlas después.');
+    if (nuevo.movimientos.some(m => (m.imagenes || []).length)) throw new Error('El respaldo referencia imágenes que este archivo no incluye. Quitá las imágenes del JSON o volvé a adjuntarlas después.');
     if (!confirm('Esto REEMPLAZA el libro actual (' + libro.movimientos.length + ' movimientos) por el importado (' + nuevo.movimientos.length + '). ¿Continuar?')) return;
     libro = nuevo; marcar(); render();
   } catch (ex) { alert(ex.message); }

@@ -8,9 +8,13 @@
  *   movimientos: [{
  *     id, fecha: "YYYY-MM-DD", evento, tipo: ingreso|gasto|distribucion,
  *     monto (always positive), concepto, miembro (distribucion only),
- *     estado: ok|pendiente, imagen: null | { id, mime, nombre }
+ *     estado: ok|pendiente, imagenes: [{ id, mime, nombre }, ...] (0..MAX_IMAGENES)
  *   }]
  * }
+ *
+ * Older ledgers stored a single `imagen: null | {...}` per movimiento instead
+ * of `imagenes`; call normalizar(libro) right after decrypting to migrate
+ * those in place before reading or editing.
  */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
@@ -21,9 +25,21 @@
   const ESTADOS = ['ok', 'pendiente'];
   const TIPO_LABEL = { ingreso: 'Ingreso', gasto: 'Gasto', distribucion: 'Distribución' };
   const IMAGE_MIMES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+  const MAX_IMAGENES = 5;
 
   function nuevoLibro() {
     return { version: VERSION, config: { reserva: 1000, miembros: [] }, movimientos: [] };
+  }
+
+  /* Migrates each movimiento's legacy singular `imagen` field into the
+   * `imagenes` list this version reads and writes. Idempotent — a no-op once
+   * a movimiento already has `imagenes`. Mutates libro in place and returns it. */
+  function normalizar(libro) {
+    for (const m of (libro.movimientos || [])) {
+      if (!Array.isArray(m.imagenes)) m.imagenes = m.imagen ? [m.imagen] : [];
+      delete m.imagen;
+    }
+    return libro;
   }
 
   function nuevoId() {
@@ -184,12 +200,15 @@
       } else if (typeof m.evento !== 'string' || !m.evento.trim()) {
         err.push(at + 'ingresos y gastos necesitan un nombre de evento');
       }
-      if (m.imagen != null) {
-        const im = m.imagen;
-        if (typeof im !== 'object' || typeof im.id !== 'string' || !/^[a-z0-9]+$/.test(im.id)
-            || !IMAGE_MIMES.includes(im.mime) || typeof im.nombre !== 'string') {
-          err.push(at + 'referencia de imagen inválida');
-        }
+      if (m.imagenes != null) {
+        if (!Array.isArray(m.imagenes)) err.push(at + 'imagenes debe ser una lista');
+        else if (m.imagenes.length > MAX_IMAGENES) err.push(at + 'máximo ' + MAX_IMAGENES + ' comprobantes por movimiento');
+        else m.imagenes.forEach((im, k) => {
+          if (typeof im !== 'object' || typeof im.id !== 'string' || !/^[a-z0-9]+$/.test(im.id)
+              || !IMAGE_MIMES.includes(im.mime) || typeof im.nombre !== 'string') {
+            err.push(at + 'comprobante #' + (k + 1) + ' inválido');
+          }
+        });
       }
     });
     return err;
@@ -207,8 +226,8 @@
   }
 
   return {
-    VERSION, TIPOS, ESTADOS, TIPO_LABEL, IMAGE_MIMES,
-    nuevoLibro, nuevoId, valor, resumen, porAnio, anioInicial, grupos, separarPrevios, validar, fechaValida,
+    VERSION, TIPOS, ESTADOS, TIPO_LABEL, IMAGE_MIMES, MAX_IMAGENES,
+    nuevoLibro, nuevoId, valor, resumen, porAnio, anioInicial, grupos, separarPrevios, normalizar, validar, fechaValida,
     fmtMonto, fmtSigned, fmtFecha,
   };
 });
