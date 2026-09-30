@@ -75,6 +75,7 @@
   .badge { font-size:11px; padding:1px 8px; border-radius:10px; background:#3a2c12; color:var(--pend); letter-spacing:.04em; }
   .dist-list { display:flex; flex-wrap:wrap; gap:8px 18px; margin-top:12px; color:var(--bone); font-size:15px; }
   .dist-list span b { color:var(--muted); font-weight:400; margin-left:4px; }
+  .dist-list .recibo { padding:0; margin-left:4px; font-size:13px; text-decoration:none; vertical-align:middle; }
   .foot { margin-top:40px; display:flex; justify-content:space-between; align-items:center; gap:12px; color:var(--muted); font-size:12px; flex-wrap:wrap; }
 
   /* previous (archived) movements */
@@ -229,7 +230,7 @@ function cardHTML(g) {
     return `<div class="card dist">
       <div class="card-head"><div class="t">${esc(g.titulo)}</div><div class="d">${fecha}</div></div>
       <div class="card-net neg">−${Ledger.fmtMonto(total)}<small>${g.movimientos.length} miembros</small></div>
-      <div class="dist-list">${g.movimientos.map(m => `<span>${esc(m.miembro)}<b>${Ledger.fmtMonto(m.monto)}</b></span>`).join('')}</div>
+      <div class="dist-list">${g.movimientos.map(m => `<span>${esc(m.miembro)}<b>${Ledger.fmtMonto(m.monto)}</b>${m.imagen ? ` <button class="link recibo" data-img="${m.imagen.id}" data-mime="${m.imagen.mime}" title="Ver comprobante">📎</button>` : ''}</span>`).join('')}</div>
     </div>`;
   }
   const netoCls = g.neto >= 0 ? 'pos' : 'neg';
